@@ -55,7 +55,8 @@ public final class Mc {
     }
 
     public static String sel(ServerPlayer p) {
-        return p.getStringUUID();
+        // Команды для игроков (tellraw, dialog, title, give, clear) принимают только ник, не UUID.
+        return p.getScoreboardName();
     }
 
     public static void tellraw(ServerPlayer p, String component) {

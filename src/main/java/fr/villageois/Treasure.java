@@ -82,7 +82,7 @@ public final class Treasure {
                 Mc.sound(p, "minecraft:ui.toast.challenge_complete", 0.8f, 1.2f);
                 Ambient.event(Content.EV_CHEST, Village.playerName(p), null);
             } else if (d2 < 100 && Village.tick % 40 == 0) {
-                Mc.run("particle minecraft:happy_villager " + c.x + " " + (c.y + 1) + " " + c.z + " 0.3 0.3 0.3 0 3 normal " + p.getStringUUID());
+                Mc.run("particle minecraft:happy_villager " + c.x + " " + (c.y + 1) + " " + c.z + " 0.3 0.3 0.3 0 3 normal " + Mc.sel(p));
             }
         }
     }

@@ -111,7 +111,7 @@ public final class Talk {
     private static void syncTuFromDatapack(ServerPlayer p, Villager v, PairState pair) {
         if (pair.tu) return;
         int vid = Mc.query("scoreboard players get " + v.getStringUUID() + " frv.vid");
-        int pid = Mc.query("scoreboard players get " + p.getStringUUID() + " frv.pid");
+        int pid = Mc.query("scoreboard players get " + Mc.sel(p) + " frv.pid");
         if (vid <= 0 || pid <= 0) return;
         if (Mc.query("execute if data storage frv:rel p" + vid + "_" + pid + "{tu:1b}") == 1) {
             pair.tu = true;
@@ -122,7 +122,7 @@ public final class Talk {
     /** И наоборот: «tu» в моде — «tu» в викторинах датапака. */
     private static void syncTuToDatapack(ServerPlayer p, Villager v) {
         Mc.run("execute store result storage frv:tmp vid int 1 run scoreboard players get " + v.getStringUUID() + " frv.vid");
-        Mc.run("execute store result storage frv:tmp pid int 1 run scoreboard players get " + p.getStringUUID() + " frv.pid");
+        Mc.run("execute store result storage frv:tmp pid int 1 run scoreboard players get " + Mc.sel(p) + " frv.pid");
         Mc.run("function frv:pair/set_tu with storage frv:tmp");
     }
 

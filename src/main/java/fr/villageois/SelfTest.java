@@ -1,5 +1,6 @@
 package fr.villageois;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.ParseResults;
 import fr.villageois.content.Content;
 import fr.villageois.content.Line;
@@ -70,7 +71,9 @@ public final class SelfTest {
             if (pr.getContext().getRange().getEnd() == 0) return "неизвестная команда";
             return "ошибка разбора около символа " + pr.getReader().getCursor();
         }
-        if (pr.getContext().build(command).getCommand() == null) return "неполная команда";
+        var ctx = pr.getContext().build(command);
+        while (ctx.getChild() != null) ctx = ctx.getChild();
+        if (ctx.getCommand() == null) return "неполная команда";
         return null;
     }
 
@@ -108,7 +111,7 @@ public final class SelfTest {
         check(info.titleIdx() == 6 && info.female(), "разбор имени «Léa · la bibliothécaire»");
         check(Villagers.isNpc(lea), "житель считается NPC датапака");
 
-        FakePlayer fake = FakePlayer.get(level);
+        FakePlayer fake = FakePlayer.get(level, new GameProfile(java.util.UUID.nameUUIDFromBytes("frv".getBytes()), "FrvTester"));
         fake.setPos(0.5, y, 0.5);
         check(Villagers.around(level, fake, 8).size() == 2, "поиск жителей рядом с игроком");
         PairState pair = Village.pair(info, fake);
