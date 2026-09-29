@@ -64,6 +64,7 @@ public final class Talk {
     // ---------- Открытие окна ----------
     public static void open(ServerPlayer p, Villager v) {
         if (Villagers.busyWithQuiz(v)) {
+            SESSIONS.remove(p.getStringUUID());
             Village.info(p, "Этот житель сейчас ведёт урок-викторину. Закончи её (обычный ПКМ) или подожди.", "gray");
             return;
         }
@@ -207,6 +208,7 @@ public final class Talk {
             if (near == null) { Village.info(p, "Рядом нет жителя. Подойди и нажми Shift + ПКМ.", "gray"); return; }
             open(p, near);
             s = session(p);
+            if (s == null) return;
             v = near;
         }
         if (s.mode == Mode.HAGGLE) { Market.offer(p, text); return; }
