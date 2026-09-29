@@ -412,6 +412,12 @@ public final class Content {
     public static final List<Msg> EV_FESTIVAL = List.of(
             m("A", "Quelle fête ! {name} est venu, et même le Golem a dansé !", "Вот это праздник! {name} пришёл, и даже голем танцевал!"),
             m("GOLEM", "Je n'ai pas dansé. J'ai trébuché avec style.", "Я не танцевал. Я стильно споткнулся."));
+    public static final List<Msg> EV_BUILD = List.of(
+            m("A", "Regardez ! Le maire a fait construire un café, une bibliothèque, un marché et une mairie. En une nuit.", "Смотрите! Мэр построил кафе, библиотеку, рынок и мэрию. За одну ночь."),
+            m("B", "Qui a payé ?", "А кто заплатил?"),
+            m("GOLEM", "Pas moi.", "Не я."),
+            m("CAT", "Moustache a déjà choisi sa place au café. Près du feu. Pour toujours.", "Мусташ уже выбрал место в кафе. У огня. Навсегда."));
+
     public static final List<Msg> EV_NEWCOMER = List.of(
             m("A", "Il y a quelqu'un de nouveau au village !", "В деревне новенький!"),
             m("B", "Cette personne parle français ?", "Этот человек говорит по-французски?"),

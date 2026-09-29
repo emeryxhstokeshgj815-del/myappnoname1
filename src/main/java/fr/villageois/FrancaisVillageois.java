@@ -144,6 +144,12 @@ public class FrancaisVillageois implements ModInitializer {
                 .then(Commands.literal("chat")
                         .then(Commands.literal("on").executes(c -> as(c, p -> { Village.pd(p).chatEnabled = true; Village.info(p, "Чат деревни включён.", "green"); })))
                         .then(Commands.literal("off").executes(c -> as(c, p -> { Village.pd(p).chatEnabled = false; Village.info(p, "Чат деревни выключен.", "gray"); }))))
+                .then(Commands.literal("batiments").executes(c -> as(c, Buildings::list)))
+                .then(Commands.literal("construire")
+                        .executes(c -> as(c, Buildings::manual))
+                        .then(Commands.literal("auto")
+                                .then(Commands.literal("on").executes(c -> as(c, p -> { Village.state.autoBuild = true; Village.info(p, "Автостроительство включено.", "green"); })))
+                                .then(Commands.literal("off").executes(c -> as(c, p -> { Village.state.autoBuild = false; Village.info(p, "Автостроительство выключено.", "gray"); })))))
                 .then(Commands.literal("carnet").executes(c -> as(c, FrancaisVillageois::carnet)))
                 .then(Commands.literal("journal").executes(c -> as(c, FrancaisVillageois::journal)))
                 .then(Commands.literal("amis").executes(c -> as(c, FrancaisVillageois::amis))));
@@ -160,6 +166,7 @@ public class FrancaisVillageois implements ModInitializer {
                 "• Библиотека — Shift + ПКМ по пюпитру. Мэрия — Shift + ПКМ по колоколу.",
                 "• Рынок — по субботам ярмарка: торговцы кричат цены, в окне разговора — «Marchander».",
                 "• /frv journal — слухи и клады · /frv carnet — как жители тебя поправляли · /frv amis — друзья",
+                "• Постройки: у колокола деревни мод сам строит Le Café, La Bibliothèque, Le Marché, La Mairie · /frv batiments — где они",
                 "• /frv ru — перевод под репликами · /frv chat off — выключить чат деревни"};
         for (String l : lines) Mc.tellraw(p, Txt.t(l, l.startsWith("━") ? "gold" : "gray"));
     }

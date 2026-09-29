@@ -199,7 +199,52 @@ public final class SelfTest {
                     Mc.audit.accept("tellraw @a " + Txt.join(Txt.t("[Chat du village] ", "dark_green"), Txt.t("X : ", "gold"), Txt.hover(m.line().fr(), "white", m.line().ru())));
         });
 
+        // 10. Аудит построек: у колокола деревни должны появиться кафе, библиотека, рынок и мэрия.
+        step("постройки у колокола", () -> {
+            Mc.run("setblock 0 " + y + " 0 minecraft:bell[attachment=floor,facing=north]");
+            Village.state.autoBuild = true;
+            Buildings.tick(fake);
+        });
+        VillageState.VillageRec rec = Buildings.known(level, new BlockPos(0, y, 0));
+        check(rec != null, "деревня с постройками записана");
+        if (rec != null) {
+            check(rec.built.size() == Buildings.TYPES.length, "построено зданий: " + rec.built.size() + " из " + Buildings.TYPES.length);
+            for (VillageState.Built b : rec.built) auditBuilding(level, b);
+            int villages = Village.state.villages.size();
+            step("повторный проход не строит заново", () -> Buildings.tick(fake));
+            check(Village.state.villages.size() == villages, "постройки не дублируются");
+        }
+        step("список построек", () -> Buildings.list(fake));
+
         Village.later(20 * 16, () -> finish(server));
+    }
+
+    /** Проверить, что здание реально стоит: блок-подпись, табличка с названием, дверь (у домов). */
+    private static void auditBuilding(ServerLevel level, VillageState.Built b) {
+        String name = Buildings.title(b.type);
+        int signatures = 0, signs = 0, doors = 0, walls = 0;
+        BlockPos signPos = null;
+        for (int dx = -1; dx <= 7; dx++) {
+            for (int dy = 0; dy <= 4; dy++) {
+                for (int dz = -1; dz <= 7; dz++) {
+                    BlockPos pos = new BlockPos(b.x + dx, b.y + dy, b.z + dz);
+                    var st = level.getBlockState(pos);
+                    String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(st.getBlock()).toString();
+                    if (id.equals(Buildings.signature(b.type))) signatures++;
+                    if (id.equals("minecraft:oak_wall_sign") || id.equals("minecraft:oak_sign")) { signs++; signPos = pos; }
+                    if (id.equals("minecraft:oak_door")) doors++;
+                    if (!st.isAir()) walls++;
+                }
+            }
+        }
+        check(signatures > 0, name + ": есть " + Buildings.signature(b.type) + " (" + signatures + ")");
+        check(signs == 1, name + ": табличка с названием");
+        if (signPos != null)
+            check(Mc.query("execute if data block " + signPos.getX() + " " + signPos.getY() + " " + signPos.getZ() + " front_text.messages[1]") == 1,
+                    name + ": текст на табличке");
+        if (!b.type.equals("marche")) check(doors == 2, name + ": дверь из двух половин (" + doors + ")");
+        check(walls > 40, name + ": здание не пустое (" + walls + " блоков)");
+        FrancaisVillageois.LOG.info("FRV-SELFTEST {} стоит в {} {} {}", name, b.x, b.y, b.z);
     }
 
     private static void finish(MinecraftServer server) {

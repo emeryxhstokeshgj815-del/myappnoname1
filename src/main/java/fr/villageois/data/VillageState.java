@@ -23,6 +23,21 @@ public class VillageState {
     public long chatDay = -1;
     public int chatCount;
     public long festivalDoneDay = -1;
+    /** Деревни, где мод уже построил кафе, библиотеку, рынок и мэрию. */
+    public List<VillageRec> villages = new ArrayList<>();
+    public boolean autoBuild = true;
+
+    public static class Built {
+        public String type;
+        public int x, y, z;
+    }
+
+    public static class VillageRec {
+        public String dim;
+        public int x, y, z;
+        public long day;
+        public List<Built> built = new ArrayList<>();
+    }
 
     public static class Chest {
         public int x, y, z;
@@ -84,6 +99,7 @@ public class VillageState {
                     if (s.pairs == null) s.pairs = new HashMap<>();
                     if (s.players == null) s.players = new HashMap<>();
                     if (s.threadUsedDay == null) s.threadUsedDay = new HashMap<>();
+                    if (s.villages == null) s.villages = new ArrayList<>();
                     return s;
                 }
             } catch (Exception e) {

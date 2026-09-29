@@ -89,6 +89,9 @@ public final class Ambient {
         }
 
         festival(p, level);
+
+        // Постройки мода: раз в 10 с проверяем, не пришли ли в деревню без кафе, библиотеки, рынка и мэрии.
+        if (Math.floorMod(t / 20 + id.hashCode(), 10) == 0) Buildings.tick(p);
     }
 
     private static boolean isBusy(Villager v) {
