@@ -1,0 +1,31 @@
+data modify storage frv:tmp vname set value "Житель"
+execute if data entity @e[type=minecraft:villager,tag=frv.spk,limit=1] CustomName.text run data modify storage frv:tmp vname set from entity @e[type=minecraft:villager,tag=frv.spk,limit=1] CustomName.text
+execute unless data entity @e[type=minecraft:villager,tag=frv.spk,limit=1] CustomName.text if data entity @e[type=minecraft:villager,tag=frv.spk,limit=1] CustomName run data modify storage frv:tmp vname set string entity @e[type=minecraft:villager,tag=frv.spk,limit=1] CustomName
+data modify storage frv:tmp sub set value ""
+execute store result storage frv:tmp step int 1 run scoreboard players get @s frv.step
+execute store result storage frv:tmp total int 1 run scoreboard players get @s frv.total
+execute store result storage frv:tmp streak int 1 run scoreboard players get @s frv.streak
+execute if score @s frv.theme matches 1 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Еда и покупки · A1"
+execute if score @s frv.theme matches 1 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Еда и покупки · A2"
+execute if score @s frv.theme matches 1 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Еда и покупки · B1"
+execute if score @s frv.theme matches 2 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Одежда и цвета · A1"
+execute if score @s frv.theme matches 2 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Одежда и цвета · A2"
+execute if score @s frv.theme matches 2 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Одежда и цвета · B1"
+execute if score @s frv.theme matches 3 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Учёба и книги · A1"
+execute if score @s frv.theme matches 3 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Учёба и книги · A2"
+execute if score @s frv.theme matches 3 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Учёба и книги · B1"
+execute if score @s frv.theme matches 4 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Город и дорога · A1"
+execute if score @s frv.theme matches 4 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Город и дорога · A2"
+execute if score @s frv.theme matches 4 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Город и дорога · B1"
+execute if score @s frv.theme matches 5 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Здоровье и чувства · A1"
+execute if score @s frv.theme matches 5 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Здоровье и чувства · A2"
+execute if score @s frv.theme matches 5 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Здоровье и чувства · B1"
+execute if score @s frv.theme matches 6 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Работа и профессии · A1"
+execute if score @s frv.theme matches 6 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Работа и профессии · A2"
+execute if score @s frv.theme matches 6 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Работа и профессии · B1"
+execute if score @s frv.theme matches 7 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Дом и семья · A1"
+execute if score @s frv.theme matches 7 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Дом и семья · A2"
+execute if score @s frv.theme matches 7 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Дом и семья · B1"
+execute if score @s frv.theme matches 8 if score @s frv.band matches 1 run data modify storage frv:tmp sub set value "Досуг и спорт · A1"
+execute if score @s frv.theme matches 8 if score @s frv.band matches 2 run data modify storage frv:tmp sub set value "Досуг и спорт · A2"
+execute if score @s frv.theme matches 8 if score @s frv.band matches 3 run data modify storage frv:tmp sub set value "Досуг и спорт · B1"

@@ -1,0 +1,104 @@
+{
+  "type": "minecraft:multi_action",
+  "title": {
+    "text": "Français Villageois",
+    "color": "gold",
+    "bold": true
+  },
+  "body": [
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "Жители с профессией говорят только по-французски.",
+        "color": "yellow"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "• ПКМ по жителю — разговор в окне. Приветствие → 2 вопроса по теме → цена словами (это реальная цена товара).",
+        "color": "white"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "• Без ошибок — скидка 30%, ошибся — дороже. После разговора ПКМ ещё раз — откроется обычная торговля.",
+        "color": "white"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "• С незнакомым — только «vous». Подружишься — перейдёте на «tu».",
+        "color": "white"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "• Твой уровень A1 → A2 → B1 растёт, когда учишь фразы. Ошибки возвращаются на повторение.",
+        "color": "white"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "• Достижения — клавиша L. Это окно всегда есть в меню паузы (Esc).",
+        "color": "white"
+      },
+      "width": 340
+    },
+    {
+      "type": "minecraft:plain_message",
+      "contents": {
+        "text": "Выбери окончания для своих ответов (fatigué / fatiguée):",
+        "color": "aqua"
+      },
+      "width": 340
+    }
+  ],
+  "actions": [
+    {
+      "label": {
+        "text": "Я парень",
+        "color": "aqua"
+      },
+      "width": 110,
+      "action": {
+        "type": "run_command",
+        "command": "trigger frv.gender set 1"
+      }
+    },
+    {
+      "label": {
+        "text": "Я девушка",
+        "color": "light_purple"
+      },
+      "width": 110,
+      "action": {
+        "type": "run_command",
+        "command": "trigger frv.gender set 2"
+      }
+    },
+    {
+      "label": {
+        "text": "Мой прогресс",
+        "color": "gold"
+      },
+      "width": 110,
+      "action": {
+        "type": "run_command",
+        "command": "trigger frv.info set 1"
+      }
+    }
+  ],
+  "columns": 3,
+  "can_close_with_escape": true,
+  "pause": false
+}

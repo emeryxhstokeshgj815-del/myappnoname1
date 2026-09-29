@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:gold_ingot"
+    },
+    "title": {
+      "text": "Quatre-vingt-dix-neuf",
+      "color": "yellow"
+    },
+    "description": {
+      "text": "Правильно пойми большую цену (уровень A2 и выше)"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "frv:fr/bonjour"
+}

@@ -1,0 +1,10 @@
+execute if score @s frv.bpos matches 0 run function frv:b/107/tm/s0 with storage frv:tmp
+execute if score @s frv.bpos matches 1 run function frv:b/107/tm/s1 with storage frv:tmp
+execute if score @s frv.bpos matches 2 run function frv:b/107/tm/s2 with storage frv:tmp
+execute if score @s frv.bpos matches 3 run function frv:b/107/tm/s3 with storage frv:tmp
+execute if score @s frv.bpos matches 4 run function frv:b/107/tm/s4 with storage frv:tmp
+execute if score @s frv.bpos matches 5 run function frv:b/107/tm/s5 with storage frv:tmp
+execute if score @s frv.bpos matches 6 run function frv:b/107/tm/s6 with storage frv:tmp
+execute if score @s frv.bpos matches 7 run function frv:b/107/tm/s7 with storage frv:tmp
+execute if score @s frv.bpos matches 8 run function frv:b/107/tm/s8 with storage frv:tmp
+execute if score @s frv.bpos matches 9 run function frv:b/107/tm/s9 with storage frv:tmp

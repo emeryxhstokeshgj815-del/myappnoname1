@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "francais_villageois",
+  "version": "${version}",
+  "name": "Français Villageois",
+  "description": "Жители говорят по-французски: кафе, библиотека, рынок, мэрия, поручения, дружба, слухи о кладах и чат деревни. Встроен датапак Français Villageois 3.",
+  "authors": ["emeryxhstokeshgj815-del"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["fr.villageois.FrancaisVillageois"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
