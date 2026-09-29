@@ -39,3 +39,16 @@ java {
 test {
     useJUnitPlatform()
 }
+
+// Самопроверка на настоящем сервере Minecraft: ./gradlew runSelftest
+loom {
+    runs {
+        selftest {
+            server()
+            configName = 'Self Test'
+            vmArg '-Dfrv.selftest=true'
+            runDir 'run-selftest'
+            ideConfigGenerated false
+        }
+    }
+}

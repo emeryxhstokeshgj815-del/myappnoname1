@@ -102,7 +102,7 @@ public final class Ambient {
         Village.later(100, () -> FrancaisVillageois.help(p));
     }
 
-    private static void greet(ServerPlayer p, Villager v, Villagers.Info info, PairState pair) {
+    static void greet(ServerPlayer p, Villager v, Villagers.Info info, PairState pair) {
         List<Line> pool;
         if (Village.thundering()) pool = Content.GREET_ORAGE;
         else if (Village.raining()) pool = Content.GREET_PLUIE;
@@ -160,7 +160,7 @@ public final class Ambient {
         play(p, a, b, dialog, isRumor);
     }
 
-    private static void play(ServerPlayer p, Villager a, Villager b, List<Line> dialog, boolean rumor) {
+    static void play(ServerPlayer p, Villager a, Villager b, List<Line> dialog, boolean rumor) {
         Villagers.Info ia = Villagers.info(a), ib = Villagers.info(b);
         String greet = Content.greetingWord(Village.period());
         String greetRu = greet.equals("Bonsoir") ? "Добрый вечер" : "Добрый день";
@@ -338,7 +338,7 @@ public final class Ambient {
         event(Content.EV_FESTIVAL, Village.playerName(p), null);
     }
 
-    private static void firework(BlockPos bell, int k) {
+    static void firework(BlockPos bell, int k) {
         int[] colors = {16711680, 65280, 255, 16776960, 16711935, 65535};
         int c1 = colors[k % colors.length], c2 = colors[(k + 2) % colors.length];
         int dx = Village.RNG.nextInt(9) - 4, dz = Village.RNG.nextInt(9) - 4;

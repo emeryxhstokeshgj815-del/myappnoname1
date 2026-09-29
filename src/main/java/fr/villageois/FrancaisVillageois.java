@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
@@ -49,7 +50,16 @@ public class FrancaisVillageois implements ModInitializer {
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "francais_villageois"), mod,
                 Component.literal("Français Villageois 3"), ResourcePackActivationType.ALWAYS_ENABLED);
 
-        ServerLifecycleEvents.SERVER_STARTED.register(Village::start);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            Village.start(server);
+            if (SelfTest.enabled()) SelfTest.start(server);
+        });
+        // При каждом входе — короткое подтверждение, что мод работает.
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayer p = handler.getPlayer();
+            Village.later(60, () -> Mc.tellraw(p, Txt.join(Txt.t("✔ Мод Français Villageois загружен. ", "green"),
+                    Txt.t("Shift + ПКМ по жителю — разговор, ", "gray"), Txt.click("/frv", "yellow", "frv", "Справка"), Txt.t(" — справка.", "gray"))));
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Village.stop());
         ServerTickEvents.END_SERVER_TICK.register(s -> {
             Village.tick++;

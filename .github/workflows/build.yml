@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,10 +18,28 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build and test
+
+      - name: Build and unit tests
         run: |
           chmod +x gradlew
           ./gradlew build --stacktrace
+
+      - name: In-game self test (real Minecraft 1.21.8 server)
+        run: |
+          mkdir -p run-selftest
+          echo "eula=true" > run-selftest/eula.txt
+          printf 'online-mode=false\nlevel-type=minecraft\\:flat\ngenerate-structures=false\nspawn-protection=0\n' > run-selftest/server.properties
+          timeout 900 ./gradlew runSelftest --stacktrace | tee selftest.log || true
+          grep "FRV-SELFTEST" selftest.log || true
+          grep -q "FRV-SELFTEST RESULT: PASS" selftest.log
+
+      - name: Upload self-test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-log
+          path: selftest.log
+
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
@@ -26,3 +47,16 @@ jobs:
           path: |
             build/libs/*.jar
             !build/libs/*-sources.jar
+
+      - name: Publish jar as a GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Français Villageois (сборка ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: |
+            Скачай файл `francais-villageois-1.0.0.jar` ниже и положи его в папку `mods`
+            (нужны Fabric Loader для Minecraft 1.21.8 и Fabric API).
+          files: build/libs/francais-villageois-1.0.0.jar

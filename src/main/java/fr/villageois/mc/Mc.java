@@ -27,8 +27,12 @@ public final class Mc {
         return server.createCommandSourceStack().withSuppressedOutput().withPermission(4);
     }
 
+    /** Для самопроверки: каждая команда мода проходит через этот наблюдатель. */
+    public static java.util.function.Consumer<String> audit;
+
     public static void run(String command) {
         if (server == null) return;
+        if (audit != null) audit.accept(command);
         try {
             server.getCommands().performPrefixedCommand(base(), command);
         } catch (Exception e) {
@@ -39,6 +43,7 @@ public final class Mc {
     /** Выполнить команду и вернуть её числовой результат (или Integer.MIN_VALUE при неудаче). */
     public static int query(String command) {
         if (server == null) return Integer.MIN_VALUE;
+        if (audit != null) audit.accept(command);
         AtomicInteger r = new AtomicInteger(Integer.MIN_VALUE);
         try {
             CommandSourceStack src = base().withCallback((success, result) -> r.set(success ? result : Integer.MIN_VALUE));
