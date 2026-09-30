@@ -52,10 +52,31 @@ public final class Buildings {
     public static void tick(ServerPlayer p) {
         if (!Village.state.autoBuild) return;
         ServerLevel level = Village.level(p);
+        upgrade(p, level);
         if (Villagers.around(level, p, 40).size() < 2) return;
         BlockPos bell = Villagers.bellNear(level, p.blockPosition(), 40);
         if (bell == null || known(level, bell) != null) return;
         buildVillage(p, bell);
+    }
+
+    /** Перестроить на месте постройки старых версий (например, с «лишним полом» из версии 1). */
+    static void upgrade(ServerPlayer p, ServerLevel level) {
+        String dim = level.dimension().location().toString();
+        for (VillageState.VillageRec v : Village.state.villages) {
+            if (!v.dim.equals(dim) || p.distanceToSqr(v.x, v.y, v.z) > 96 * 96) continue;
+            boolean any = false;
+            for (VillageState.Built b : v.built) {
+                if (b.v >= VERSION) continue;
+                build(b.type, b.x, b.y, b.z, doorSide(b.x, b.z, new BlockPos(v.x, v.y, v.z)));
+                b.v = VERSION;
+                any = true;
+            }
+            if (any) {
+                Village.save();
+                Mc.tellraw(p, Txt.join(Txt.t("⚒ Le maire a tout rénové ! ", "gold"), Txt.t("Постройки деревни перестроены в новом виде.", "yellow")));
+                Mc.sound(p, "minecraft:ui.toast.challenge_complete", 0.7f, 1.2f);
+            }
+        }
     }
 
     public static VillageState.VillageRec known(ServerLevel level, BlockPos pos) {
@@ -89,6 +110,7 @@ public final class Buildings {
             b.x = site[0];
             b.y = site[1];
             b.z = site[2];
+            b.v = VERSION;
             rec.built.add(b);
         }
         Village.state.villages.add(rec);
@@ -175,8 +197,11 @@ public final class Buildings {
     }
 
     // ---------- Как строить ----------
-    /** Локальные координаты: дверь в середине стены z=6 («юг»), вход снаружи. Поворот под сторону двери. */
-    private record Frame(int x0, int y, int z0, int side) {
+    /** Версия чертежей. Постройки старых версий перестраиваются на месте. */
+    public static final int VERSION = 2;
+
+    /** Локальные координаты: дверь в середине стены z=6 («юг»). Поворот — под сторону двери. */
+    record Frame(int x0, int y, int z0, int side) {
         int wx(int lx, int lz) {
             return x0 + switch (side) {
                 case 1 -> 6 - lx;
@@ -195,29 +220,28 @@ public final class Buildings {
             };
         }
 
-        String out() {
-            return switch (side) {
-                case 1 -> "north";
-                case 2 -> "east";
-                case 3 -> "west";
-                default -> "south";
+        /** Локальное направление → мировое. */
+        String dir(String local) {
+            String[] order = {"south", "west", "north", "east"}; // по часовой стрелке
+            int idx = java.util.Arrays.asList(order).indexOf(local);
+            int turn = switch (side) {
+                case 1 -> 2;
+                case 2 -> 3;
+                case 3 -> 1;
+                default -> 0;
             };
+            return order[(idx + turn) % 4];
         }
 
-        String in() {
-            return switch (side) {
-                case 1 -> "south";
-                case 2 -> "west";
-                case 3 -> "east";
-                default -> "north";
-            };
-        }
+        String out() { return dir("south"); }
+
+        String in() { return dir("north"); }
 
         int signRotation() {
-            return switch (side) {
-                case 1 -> 8;
-                case 2 -> 12;
-                case 3 -> 4;
+            return switch (out()) {
+                case "north" -> 8;
+                case "east" -> 12;
+                case "west" -> 4;
                 default -> 0;
             };
         }
@@ -241,95 +265,174 @@ public final class Buildings {
 
     public static void build(String type, int x0, int y, int z0, int side) {
         Frame f = new Frame(x0, y, z0, side);
-        // Площадка: фундамент, расчистка, пол.
+        // Площадка: фундамент, полная расчистка (крыша до y+7, флаг до y+10), дорожка у входа.
         f.fill(-1, -4, -1, 7, -2, 7, "minecraft:cobblestone replace #minecraft:replaceable");
         f.fill(0, -4, 0, 6, -2, 6, "minecraft:cobblestone");
-        f.fill(-1, 0, -1, 7, 7, 7, "minecraft:air");
-        f.fill(2, -1, 7, 4, -1, 7, "minecraft:cobblestone");
+        f.fill(-1, 0, -1, 7, 11, 7, "minecraft:air");
+        f.fill(1, -1, 7, 5, -1, 7, "minecraft:cobblestone");
+        f.set(3, -1, 7, "minecraft:mossy_cobblestone");
         switch (type) {
             case "cafe" -> cafe(f);
             case "bibliotheque" -> library(f);
             case "marche" -> market(f);
             default -> townHall(f);
         }
-        Mc.run("particle minecraft:happy_villager " + f.pos(3, 2, 3) + " 3 2 3 0 60 force");
+        Mc.run("particle minecraft:happy_villager " + f.pos(3, 2, 3) + " 3 2 3 0 80 force");
+        Mc.run("particle minecraft:end_rod " + f.pos(3, 4, 3) + " 3 3 3 0.02 60 force");
+        Mc.run("playsound minecraft:block.amethyst_block.chime block @a " + f.pos(3, 1, 3) + " 2 1");
     }
 
-    /** Коробка дома: стены, углы-брёвна, окна, дверь, крыша, табличка над дверью, фонарь. */
-    private static void shell(Frame f, String wall, String floor, String roof, String line1, String line2) {
-        f.fill(0, -1, 0, 6, -1, 6, floor);
-        f.fill(0, 0, 0, 6, 3, 6, wall + " hollow");
-        for (int[] c : new int[][]{{0, 0}, {6, 0}, {0, 6}, {6, 6}}) f.fill(c[0], 0, c[1], c[0], 3, c[1], "minecraft:oak_log");
-        f.fill(-1, 4, -1, 7, 4, 7, roof);
-        f.set(0, 1, 3, "minecraft:glass_pane");
-        f.set(6, 1, 3, "minecraft:glass_pane");
-        f.set(3, 1, 0, "minecraft:glass_pane");
-        f.set(3, 0, 6, "minecraft:oak_door[facing=" + f.in() + ",half=lower,hinge=left]");
-        f.set(3, 1, 6, "minecraft:oak_door[facing=" + f.in() + ",half=upper,hinge=left]");
-        f.set(3, 2, 7, "minecraft:oak_wall_sign[facing=" + f.out() + "]" + sign(line1, line2));
-        f.set(3, 3, 3, "minecraft:lantern[hanging=true]");
+    /** Материалы дома. */
+    private record Style(String frame, String wall, String floor, String roofStairs, String ridge, String gable, boolean backWindows) {}
+
+    /**
+     * Коробка дома без лишних полов: пол на y-1, стены y0–y2 четырьмя отдельными заливками,
+     * каркас из брёвен, окна 1×2, двускатная крыша из ступенек со свесами, фонари у входа.
+     */
+    private static void house(Frame f, Style s, String line1, String line2) {
+        f.fill(0, -1, 0, 6, -1, 6, s.floor());
+        f.fill(0, 0, 0, 6, 2, 0, s.wall());
+        f.fill(0, 0, 6, 6, 2, 6, s.wall());
+        f.fill(0, 0, 0, 0, 2, 6, s.wall());
+        f.fill(6, 0, 0, 6, 2, 6, s.wall());
+        for (int[] c : new int[][]{{0, 0}, {6, 0}, {0, 6}, {6, 6}}) f.fill(c[0], 0, c[1], c[0], 3, c[1], s.frame());
+        f.fill(0, 3, 0, 6, 3, 0, s.frame());
+        f.fill(0, 3, 6, 6, 3, 6, s.frame());
+        f.fill(0, 3, 0, 0, 3, 6, s.frame());
+        f.fill(6, 3, 0, 6, 3, 6, s.frame());
+        // Окна 1×2.
+        for (int z : new int[]{2, 4}) {
+            f.fill(0, 1, z, 0, 2, z, "minecraft:glass_pane");
+            f.fill(6, 1, z, 6, 2, z, "minecraft:glass_pane");
+        }
+        if (s.backWindows()) for (int x : new int[]{2, 4}) f.fill(x, 1, 0, x, 2, 0, "minecraft:glass_pane");
+        for (int x : new int[]{1, 5}) f.fill(x, 1, 6, x, 2, 6, "minecraft:glass_pane");
+        // Крыша: ступеньки поднимаются к коньку над z=3, свес на блок со всех сторон.
+        String up = s.roofStairs() + "[facing=" + f.dir("south") + "]";
+        String down = s.roofStairs() + "[facing=" + f.dir("north") + "]";
+        for (int k = 0; k < 4; k++) {
+            f.fill(-1, 4 + k, -1 + k, 7, 4 + k, -1 + k, up);
+            f.fill(-1, 4 + k, 7 - k, 7, 4 + k, 7 - k, down);
+        }
+        f.fill(-1, 7, 3, 7, 7, 3, s.ridge());
+        // Фронтоны.
+        for (int gx : new int[]{0, 6}) {
+            f.fill(gx, 4, 0, gx, 4, 6, s.gable());
+            f.fill(gx, 5, 1, gx, 5, 5, s.gable());
+            f.fill(gx, 6, 2, gx, 6, 4, s.gable());
+            f.set(gx, 5, 3, "minecraft:glass_pane");
+        }
+        // Дверь, вывеска, свет.
+        f.set(3, 0, 6, "minecraft:spruce_door[facing=" + f.in() + ",half=lower,hinge=left]");
+        f.set(3, 1, 6, "minecraft:spruce_door[facing=" + f.in() + ",half=upper,hinge=left]");
+        f.set(3, 2, 7, "minecraft:spruce_wall_sign[facing=" + f.out() + "]" + sign(line1, line2));
+        f.set(3, 6, 3, "minecraft:lantern[hanging=true]");
+        for (int x : new int[]{1, 5}) {
+            f.set(x, 0, 7, "minecraft:spruce_fence");
+            f.set(x, 1, 7, "minecraft:lantern");
+        }
+        // Цветущие кусты под боковыми окнами.
+        for (int z : new int[]{2, 4}) {
+            for (int bx : new int[]{-1, 7}) {
+                f.set(bx, -1, z, "minecraft:grass_block");
+                f.set(bx, 0, z, "minecraft:flowering_azalea_leaves[persistent=true]");
+            }
+        }
     }
 
     private static void cafe(Frame f) {
-        shell(f, "minecraft:oak_planks", "minecraft:spruce_planks", "minecraft:oak_slab[type=bottom]", "Le Café", "Bienvenue !");
-        // Стойка и «камин» (костёр — по нему мод узнаёт кафе).
-        f.fill(1, 0, 1, 3, 0, 1, "minecraft:barrel[facing=up]");
+        house(f, new Style("minecraft:stripped_spruce_wood", "minecraft:white_terracotta", "minecraft:smooth_quartz",
+                "minecraft:dark_oak_stairs", "minecraft:dark_oak_planks", "minecraft:spruce_planks", true), "Le Café", "Bienvenue !");
+        // Клетчатый пол бистро.
+        for (int x = 1; x <= 5; x++) for (int z = 1; z <= 5; z++) if ((x + z) % 2 == 0) f.set(x, -1, z, "minecraft:polished_blackstone");
+        // Полосатый навес над входом.
+        for (int x = 0; x <= 6; x++) f.set(x, 3, 7, x % 2 == 0 ? "minecraft:red_wool" : "minecraft:white_wool");
+        // Стойка: бочки, кофемашина (варочная стойка) и торт.
+        f.fill(1, 0, 1, 2, 0, 1, "minecraft:barrel[facing=up]");
+        f.set(1, 0, 2, "minecraft:barrel[facing=up]");
+        f.set(1, 1, 1, "minecraft:brewing_stand");
+        f.set(2, 1, 1, "minecraft:cake");
+        // Камин с трубой: костёр внутри, дымящий костёр на трубе.
         f.set(5, 0, 1, "minecraft:campfire[lit=true]");
-        f.set(5, 4, 1, "minecraft:air");
-        // Столики со стульями.
-        for (int lx : new int[]{2, 4}) {
-            f.set(lx, 0, 4, "minecraft:oak_fence");
-            f.set(lx, 1, 4, "minecraft:oak_pressure_plate");
+        f.fill(5, 1, 1, 5, 7, 1, "minecraft:bricks");
+        f.set(5, 8, 1, "minecraft:campfire[lit=true]");
+        // Столики с белыми скатертями и стульями.
+        for (int x : new int[]{2, 4}) {
+            f.set(x, 0, 4, "minecraft:spruce_fence");
+            f.set(x, 1, 4, "minecraft:white_carpet");
         }
-        f.set(1, 0, 4, "minecraft:spruce_stairs[facing=west]");
-        f.set(5, 0, 4, "minecraft:spruce_stairs[facing=east]");
-        f.set(1, 0, 5, "minecraft:potted_poppy");
-        // Терраса у входа: второй костёр под открытым небом.
-        f.set(5, -1, 7, "minecraft:cobblestone");
-        f.set(5, 0, 7, "minecraft:campfire[lit=true]");
+        f.set(1, 0, 4, "minecraft:spruce_stairs[facing=" + f.dir("west") + "]");
+        f.set(5, 0, 4, "minecraft:spruce_stairs[facing=" + f.dir("east") + "]");
+        f.set(5, 0, 5, "minecraft:potted_azalea_bush");
+        f.set(1, 0, 5, "minecraft:potted_red_tulip");
     }
 
     private static void library(Frame f) {
-        shell(f, "minecraft:oak_planks", "minecraft:dark_oak_planks", "minecraft:dark_oak_slab[type=bottom]", "La Bibliothèque", "Chut !");
+        house(f, new Style("minecraft:stripped_dark_oak_wood", "minecraft:bricks", "minecraft:dark_oak_planks",
+                "minecraft:spruce_stairs", "minecraft:spruce_planks", "minecraft:dark_oak_planks", false), "La Bibliothèque", "Chut !");
         f.fill(1, 0, 1, 5, 2, 1, "minecraft:bookshelf");
-        f.fill(1, 0, 2, 1, 2, 4, "minecraft:bookshelf");
-        f.fill(5, 0, 2, 5, 2, 4, "minecraft:bookshelf");
-        f.set(2, 0, 3, "minecraft:lectern[facing=" + f.out() + "]");
-        f.set(4, 0, 3, "minecraft:lectern[facing=" + f.out() + "]");
-        f.fill(2, 0, 5, 4, 0, 5, "minecraft:red_carpet");
+        f.fill(1, 0, 2, 1, 2, 3, "minecraft:bookshelf");
+        f.fill(5, 0, 2, 5, 2, 3, "minecraft:bookshelf");
+        // Стол зачарования среди полок — светится и «читает» книги.
+        f.set(3, 0, 2, "minecraft:enchanting_table");
+        f.set(2, 0, 4, "minecraft:lectern[facing=" + f.out() + "]");
+        f.set(4, 0, 4, "minecraft:lectern[facing=" + f.out() + "]");
+        f.fill(3, 0, 3, 3, 0, 5, "minecraft:red_carpet");
+        for (int x : new int[]{1, 3, 5}) f.set(x, 3, 1, "minecraft:candle[candles=3,lit=true]");
     }
 
     private static void townHall(Frame f) {
-        shell(f, "minecraft:stone_bricks", "minecraft:polished_andesite", "minecraft:stone_brick_slab[type=bottom]", "La Mairie", "Annonces");
+        house(f, new Style("minecraft:stone_bricks", "minecraft:smooth_quartz", "minecraft:polished_andesite",
+                "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tiles", "minecraft:smooth_quartz", true), "La Mairie", "Annonces");
+        // Колокол (Shift + ПКМ — доска поручений), реестр, дорожка, знамёна.
         f.set(3, 0, 2, "minecraft:bell[attachment=floor,facing=" + f.out() + "]");
         f.set(3, 0, 1, "minecraft:lectern[facing=" + f.out() + "]");
         f.fill(3, 0, 3, 3, 0, 5, "minecraft:red_carpet");
+        f.set(1, 2, 1, "minecraft:blue_wall_banner[facing=" + f.dir("south") + "]");
+        f.set(5, 2, 1, "minecraft:red_wall_banner[facing=" + f.dir("south") + "]");
         f.set(1, 0, 1, "minecraft:potted_blue_orchid");
         f.set(5, 0, 1, "minecraft:potted_dandelion");
-        f.set(1, 0, 5, "minecraft:spruce_stairs[facing=west]");
-        f.set(5, 0, 5, "minecraft:spruce_stairs[facing=east]");
+        f.set(1, 0, 5, "minecraft:spruce_stairs[facing=" + f.dir("west") + "]");
+        f.set(5, 0, 5, "minecraft:spruce_stairs[facing=" + f.dir("east") + "]");
+        // Французский флаг над коньком.
+        f.fill(3, 8, 3, 3, 10, 3, "minecraft:spruce_fence");
+        f.fill(4, 9, 3, 4, 10, 3, "minecraft:blue_wool");
+        f.fill(5, 9, 3, 5, 10, 3, "minecraft:white_wool");
+        f.fill(6, 9, 3, 6, 10, 3, "minecraft:red_wool");
     }
 
     private static void market(Frame f) {
-        f.fill(0, -1, 0, 6, -1, 6, "minecraft:cobblestone");
-        // Два прилавка с полосатыми навесами.
-        int[][] stalls = {{0, 14}, {4, 11}}; // {lx, цвет: 14=red, 11=blue}
-        for (int[] s : stalls) {
-            int lx = s[0];
-            String color = s[1] == 14 ? "red" : "blue";
-            f.fill(lx, 0, 1, lx + 2, 0, 1, "minecraft:barrel[facing=up]");
-            for (int x = lx; x <= lx + 2; x += 2) {
-                f.fill(x, 0, 3, x, 2, 3, "minecraft:oak_fence");
-                f.fill(x, 1, 1, x, 2, 1, "minecraft:oak_fence");
+        // Мощёная площадка с узором.
+        for (int x = 0; x <= 6; x++) {
+            for (int z = 0; z <= 6; z++) {
+                int h = (x * 7 + z * 3) % 5;
+                f.set(x, -1, z, h == 0 ? "minecraft:mossy_cobblestone" : h == 1 ? "minecraft:gravel" : "minecraft:cobblestone");
             }
-            f.fill(lx, 3, 1, lx + 2, 3, 3, "minecraft:" + color + "_wool");
-            f.fill(lx + 1, 3, 1, lx + 1, 3, 3, "minecraft:white_wool");
         }
-        f.set(1, 0, 2, "minecraft:pumpkin");
-        f.set(5, 0, 2, "minecraft:melon");
-        f.set(3, 0, 2, "minecraft:hay_block");
-        f.set(3, 0, 6, "minecraft:oak_sign[rotation=" + f.signRotation() + "]" + sign("Le Marché", "Foire : samedi"));
-        f.set(3, 1, 2, "minecraft:lantern");
+        // Два прилавка с полосатыми навесами.
+        String[][] colors = {{"minecraft:red_wool", "minecraft:white_wool"}, {"minecraft:blue_wool", "minecraft:yellow_wool"}};
+        int[] lxs = {0, 4};
+        for (int i = 0; i < 2; i++) {
+            int lx = lxs[i];
+            f.fill(lx, 0, 2, lx + 2, 0, 2, "minecraft:barrel[facing=up]");
+            for (int x : new int[]{lx, lx + 2}) {
+                f.fill(x, 0, 0, x, 2, 0, "minecraft:spruce_fence");
+                f.fill(x, 1, 2, x, 2, 2, "minecraft:spruce_fence");
+            }
+            for (int x = lx; x <= lx + 2; x++) f.fill(x, 3, 0, x, 3, 3, colors[i][(x - lx) % 2]);
+        }
+        f.set(1, 1, 2, "minecraft:pumpkin");
+        f.set(5, 1, 2, "minecraft:melon");
+        f.set(1, 0, 1, "minecraft:hay_block");
+        f.set(5, 0, 1, "minecraft:barrel[facing=up]");
+        // Ящики, сено и фонарь посередине.
+        f.set(0, 0, 5, "minecraft:barrel[facing=up]");
+        f.set(0, 1, 5, "minecraft:barrel[facing=up]");
+        f.set(6, 0, 5, "minecraft:hay_block");
+        f.set(6, 0, 4, "minecraft:carved_pumpkin[facing=" + f.out() + "]");
+        f.fill(3, 0, 4, 3, 1, 4, "minecraft:spruce_fence");
+        f.set(3, 2, 4, "minecraft:lantern");
+        f.set(3, 0, 6, "minecraft:spruce_sign[rotation=" + f.signRotation() + "]" + sign("Le Marché", "Foire : samedi"));
     }
 
     /** Список построек для /frv batiments. */
@@ -380,6 +483,7 @@ public final class Buildings {
             b.x = site[0];
             b.y = site[1];
             b.z = site[2];
+            b.v = VERSION;
             rec.built.add(b);
             added++;
         }

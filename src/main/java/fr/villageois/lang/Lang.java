@@ -454,7 +454,7 @@ public final class Lang {
         INTENTS.put("greet", p("\\b(bonjour|bonsoir|salut|coucou|hello|bonne matinée)\\b"));
         INTENTS.put("howareyou", p("(\\b(ça|ca) va\\b.*\\?|comment (ça|ca) va|comment allez-vous|comment vas-tu|vous allez bien|tu vas bien|^\\s*(ça|ca) va\\s*\\??\\s*$)"));
         INTENTS.put("askname", p("\\b(comment (tu t'appelles|vous vous appelez|t'appelles-tu|vous appelez-vous)|(ton|votre) nom|tu t'appelles comment|qui es-tu|qui êtes-vous)"));
-        INTENTS.put("askjob", p("\\b((ton|votre) (travail|métier|job)|tu fais quoi|vous faites quoi|que fais-tu|que faites-vous|tu travailles|vous travaillez)"));
+        INTENTS.put("askjob", p("\\b((ton|votre) (travail|métier|job)|tu fais quoi|vous faites quoi|qu'est-ce que tu fais|qu'est-ce que vous faites|que fais-tu|que faites-vous|tu travailles|vous travaillez)"));
         INTENTS.put("weather", p("\\b(temps|météo|meteo|pleut|pluie|soleil|il fait|orage)\\b"));
         INTENTS.put("rumor", p("\\b(rumeurs?|secrets?|potins?|nouvelles|coffres?|trésors?|tresors?|quoi de neuf)\\b"));
         INTENTS.put("help", p("\\b(aide|aider|besoin|mission|tâche|tache|service|je peux)\\b"));

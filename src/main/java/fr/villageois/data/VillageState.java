@@ -26,10 +26,13 @@ public class VillageState {
     /** Деревни, где мод уже построил кафе, библиотеку, рынок и мэрию. */
     public List<VillageRec> villages = new ArrayList<>();
     public boolean autoBuild = true;
+    public boolean quietFeedback = true;
 
     public static class Built {
         public String type;
         public int x, y, z;
+        /** Версия чертежа (см. Buildings.VERSION). */
+        public int v;
     }
 
     public static class VillageRec {

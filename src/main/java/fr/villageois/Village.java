@@ -37,6 +37,9 @@ public final class Village {
         file = server.getWorldPath(LevelResource.ROOT).resolve("francais_villageois.json");
         state = VillageState.load(file);
         Mc.run("kill @e[type=minecraft:text_display,tag=frv.bubble]");
+        // Окна датапака отвечают через /trigger, и Minecraft пишет в чат «Triggered [frv.ans]…».
+        // Отключаем служебные отклики команд (вернуть: /frv feedback on).
+        if (state.quietFeedback) Mc.run("gamerule sendCommandFeedback false");
     }
 
     public static void stop() {

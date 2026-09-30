@@ -215,6 +215,12 @@ public final class SelfTest {
             check(Village.state.villages.size() == villages, "постройки не дублируются");
         }
         step("список построек", () -> Buildings.list(fake));
+        step("окна викторины с кнопкой «ℹ Подробнее»", () -> auditQuizDialogs(server));
+        step("новое окно разговора и «ℹ Plus»", () -> {
+            Talk.open(fake, lea);
+            Talk.plus(fake);
+            Talk.show(fake);
+        });
 
         Village.later(20 * 16, () -> finish(server));
     }
@@ -225,14 +231,14 @@ public final class SelfTest {
         int signatures = 0, signs = 0, doors = 0, walls = 0;
         BlockPos signPos = null;
         for (int dx = -1; dx <= 7; dx++) {
-            for (int dy = 0; dy <= 4; dy++) {
+            for (int dy = 0; dy <= 11; dy++) {
                 for (int dz = -1; dz <= 7; dz++) {
                     BlockPos pos = new BlockPos(b.x + dx, b.y + dy, b.z + dz);
                     var st = level.getBlockState(pos);
                     String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(st.getBlock()).toString();
                     if (id.equals(Buildings.signature(b.type))) signatures++;
-                    if (id.equals("minecraft:oak_wall_sign") || id.equals("minecraft:oak_sign")) { signs++; signPos = pos; }
-                    if (id.equals("minecraft:oak_door")) doors++;
+                    if (id.endsWith("_wall_sign") || id.endsWith("_sign")) { signs++; signPos = pos; }
+                    if (id.endsWith("_door")) doors++;
                     if (!st.isAir()) walls++;
                 }
             }
@@ -242,9 +248,45 @@ public final class SelfTest {
         if (signPos != null)
             check(Mc.query("execute if data block " + signPos.getX() + " " + signPos.getY() + " " + signPos.getZ() + " front_text.messages[1]") == 1,
                     name + ": текст на табличке");
-        if (!b.type.equals("marche")) check(doors == 2, name + ": дверь из двух половин (" + doors + ")");
+        if (!b.type.equals("marche")) {
+            check(doors == 2, name + ": дверь из двух половин (" + doors + ")");
+            // Центр здания (3, *, 3) не зависит от поворота: там должно быть свободно,
+            // а над ним — конёк крыши. Баг версии 1 (fill … hollow) давал тут пол и потолок.
+            BlockPos c = new BlockPos(b.x + 3, b.y, b.z + 3);
+            check(level.getBlockState(c.above(1)).isAir() && level.getBlockState(c.above(2)).isAir(), name + ": внутри свободно на высоте роста (нет лишнего пола)");
+            check(level.getBlockState(c.above(3)).isAir() && level.getBlockState(c.above(4)).isAir(), name + ": под крышей нет лишнего потолка");
+            check(!level.getBlockState(c.above(7)).isAir(), name + ": есть конёк крыши");
+            check(!level.getBlockState(c.below()).isAir(), name + ": есть настоящий пол");
+        }
         check(walls > 40, name + ": здание не пустое (" + walls + " блоков)");
         FrancaisVillageois.LOG.info("FRV-SELFTEST {} стоит в {} {} {}", name, b.x, b.y, b.z);
+    }
+
+    /** Каждое окно-вопрос датапака (с макросами) должно разбираться игрой после упрощения. */
+    private static void auditQuizDialogs(MinecraftServer server) {
+        var root = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(FrancaisVillageois.MOD_ID).orElseThrow()
+                .findPath("resourcepacks/francais_villageois/data/frv/function").orElseThrow();
+        int total = 0, bad = 0, withInfo = 0;
+        try (var files = java.nio.file.Files.walk(root)) {
+            for (var path : (Iterable<java.nio.file.Path>) files.filter(x -> x.toString().endsWith(".mcfunction"))::iterator) {
+                for (String line : java.nio.file.Files.readAllLines(path)) {
+                    int i = line.indexOf("dialog show @s {");
+                    if (i < 0) continue;
+                    String cmd = line.substring(i).replaceAll("\\$\\([a-z0-9_]+\\)", "1");
+                    total++;
+                    if (cmd.contains("ℹ Подробнее")) withInfo++;
+                    String err = parseError(server, cmd);
+                    if (err != null) {
+                        bad++;
+                        if (bad <= 5) FrancaisVillageois.LOG.error("FRV-SELFTEST BAD QUIZ DIALOG in {} ({}): {}", path, err, cmd.substring(0, Math.min(300, cmd.length())));
+                    }
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+        check(total > 1000 && bad == 0, "окна датапака разбираются игрой: " + (total - bad) + " из " + total);
+        check(withInfo > 1000, "у окон-вопросов есть кнопка «ℹ Подробнее»: " + withInfo);
     }
 
     private static void finish(MinecraftServer server) {

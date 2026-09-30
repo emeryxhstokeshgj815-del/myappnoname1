@@ -1,6 +1,7 @@
 package fr.villageois;
 
 import fr.villageois.brain.Brain;
+import fr.villageois.brain.Replies;
 import fr.villageois.content.Content;
 import fr.villageois.content.Items;
 import fr.villageois.content.Line;
@@ -127,74 +128,114 @@ public final class Talk {
     }
 
     // ---------- Отрисовка окна ----------
+    /** Главное окно: имя, последняя реплика, варианты ответа, своё поле ввода, внизу «ℹ Plus». */
     public static void show(ServerPlayer p) {
         Session s = session(p);
         Villager v = villager(p, s);
         if (v == null) {
             SESSIONS.remove(p.getStringUUID());
             Mc.closeDialog(p);
-            Village.info(p, "Житель ушёл. Подойди ближе и снова нажми Shift + ПКМ.", "gray");
             return;
         }
         Villagers.Info info = Villagers.info(v);
         PairState pair = Village.pair(info, p);
-        VillageState.PlayerData pd = Village.pd(p);
-        boolean ru = pd.showRu;
+        boolean ru = Village.pd(p).showRu;
 
         Dialog d = new Dialog(Txt.t(info.full(), "gold"));
-        String weather = Village.thundering() ? " ⚡" : Village.raining() ? " ☂" : "";
+        // Только последний обмен репликами.
+        int from = 0;
+        for (int i = s.history.size() - 1; i >= 0; i--) if (s.history.get(i).player()) { from = i; break; }
+        String lastVillager = null;
+        for (int i = from; i < s.history.size(); i++) {
+            Entry e = s.history.get(i);
+            if (e.player()) {
+                d.text(Txt.t("— " + e.fr(), "gray", true));
+                continue;
+            }
+            List<String> parts = new ArrayList<>();
+            parts.add(Txt.t("« ", "dark_gray"));
+            parts.addAll(Txt.markup(e.fr(), "white", e.ru()));
+            parts.add(Txt.t(" »", "dark_gray"));
+            d.text(Txt.join(parts));
+            if (ru && e.ru() != null) d.text(Txt.t(e.ru(), "dark_gray", true));
+            lastVillager = Txt.strip(e.fr());
+        }
+
+        d.columns(1);
+        switch (s.mode) {
+            case TU_OFFER -> {
+                d.button("Oui, on se tutoie !", "green", "frv tu oui", 320);
+                d.button("Non, gardons le « vous ».", "white", "frv tu non", 320);
+            }
+            case HAGGLE -> {
+                Market.Haggle h = s.haggle;
+                int offer = Math.max(1, h.ask - 2);
+                d.text(Txt.t(Lang.cap(h.good.fr()) + " — " + Lang.numberWords(h.ask) + " émeraudes", "green"));
+                d.button("C'est trop cher !", "white", "frv offre C'est trop cher !", 320);
+                d.button(Lang.cap(Lang.numberWords(offer)) + " émeraudes, ça va ?", "white", "frv offre " + Lang.numberWords(offer) + " émeraudes, ça va ?", 320);
+                d.button("D'accord, je prends !", "white", "frv offre D'accord, je prends !", 320);
+                d.button("Non, merci.", "white", "frv offre Non, merci.", 320);
+                d.input("msg", Txt.t("…или предложи свою цену по-французски:", "gray"), 200);
+                d.dynamicButton("» Envoyer", "green", "frv offre $(msg)", 320);
+            }
+            default -> {
+                boolean spoke = s.history.stream().anyMatch(Entry::player);
+                long turns = s.history.stream().filter(Entry::player).count();
+                List<Replies.Option> opts = Replies.suggest(new Replies.Ctx(pair.tu, Village.period(), lastVillager, spoke,
+                        pair.questItem != null, !p.getMainHandItem().isEmpty(), Village.fairDay(),
+                        pair.name != null ? pair.name : p.getScoreboardName(), pair.name != null, (int) turns));
+                for (Replies.Option o : opts) d.button(o.label(), "white", o.command(), 320);
+                d.input("msg", Txt.t("…или напиши свою фразу по-французски:", "gray"), 256);
+                d.dynamicButton("» Dire", "green", "frv dire $(msg)", 320);
+            }
+        }
+        d.button("ℹ Plus…", "gray", "frv plus", 320);
+        d.exit("Au revoir", "frv aurevoir");
+        Mc.dialog(p, d);
+    }
+
+    /** Окно «ℹ Plus»: отношения, день, поручение, вся история, перевод, подарок, рынок. */
+    public static void plus(ServerPlayer p) {
+        Session s = session(p);
+        Villager v = villager(p, s);
+        if (v == null) { SESSIONS.remove(p.getStringUUID()); return; }
+        Villagers.Info info = Villagers.info(v);
+        PairState pair = Village.pair(info, p);
+        boolean ru = Village.pd(p).showRu;
+        Dialog d = new Dialog(Txt.t(info.full(), "gold"));
+        String weather = Village.thundering() ? " ⚡ гроза" : Village.raining() ? " ☂ дождь" : "";
         String time = switch (Village.period()) {
             case MATIN -> "утро";
             case APRES_MIDI -> "день";
             case SOIR -> "вечер";
             case NUIT -> "ночь";
         };
-        d.text(Txt.t("♥ " + pair.friend + "/100 (" + pair.levelRu() + ") · " + (pair.tu ? "на «tu»" : "на «vous»") + " · "
-                + Content.JOURS[Village.weekday()] + ", " + time + weather + (Village.fairDay() ? " · ЯРМАРКА" : ""), "gray"));
-        for (Entry e : s.history) {
-            if (e.player()) {
-                d.text(Txt.join(Txt.t("Toi : ", "aqua"), Txt.t(e.fr(), "gray")));
-            } else {
-                List<String> parts = new ArrayList<>();
-                parts.add(Txt.t("« ", "dark_gray"));
-                parts.addAll(Txt.markup(e.fr(), "white", e.ru()));
-                parts.add(Txt.t(" »", "dark_gray"));
-                d.text(Txt.join(parts));
-                if (ru && e.ru() != null) d.text(Txt.t("RU: " + e.ru(), "dark_gray", true));
-            }
-        }
+        String hearts = "♥".repeat(pair.friend / 20) + "♡".repeat(5 - pair.friend / 20);
+        d.text(Txt.join(Txt.t(hearts + " ", "red"), Txt.t(pair.friend + "/100 · " + pair.levelRu() + " · " + (pair.tu ? "на «tu»" : "на «vous»"), "gray")));
+        d.text(Txt.t(Content.JOURS[Village.weekday()] + " (" + Content.JOURS_RU[Village.weekday()] + "), " + time + weather
+                + (Village.fairDay() ? " · сегодня ярмарка!" : ""), "gray"));
         if (pair.questItem != null) {
             Items.FItem it = Items.byId(pair.questItem);
             if (it != null) d.text(Txt.t("✦ Поручение: " + Lang.R(requestFr(it, pair.questCount), pair.tu), "light_purple"));
         }
-
-        switch (s.mode) {
-            case TU_OFFER -> {
-                d.columns(2);
-                d.button("Oui, on se tutoie !", "green", "frv tu oui", 150);
-                d.button("Non, gardons le « vous »", "gray", "frv tu non", 150);
-            }
-            case HAGGLE -> {
-                Market.Haggle h = s.haggle;
-                d.text(Txt.t("Товар: " + h.good.fr() + " — цена сейчас: " + h.ask + " изумр. Предложи свою цену по-французски: «C'est trop cher ! Trois, ça va ?»", "green"));
-                d.input("msg", Txt.t(pair.tu ? "Ta proposition" : "Votre proposition", "white"), 200);
-                d.columns(2);
-                d.dynamicButton("Proposer", "green", "frv offre $(msg)", 150);
-                d.button("✔ Je prends (" + h.ask + ")", "yellow", "frv offre je prends", 150);
-                d.button("✘ Non, merci", "gray", "frv offre non merci", 150);
-                d.button(ru ? "Скрыть перевод" : "Показать перевод", "dark_gray", "frv ru", 150);
-            }
-            default -> {
-                d.input("msg", Txt.t(pair.tu ? "Ta phrase (en français)" : "Votre phrase (en français)", "white"), 256);
-                d.columns(2);
-                d.dynamicButton("» Dire", "green", "frv dire $(msg)", 150);
-                d.button("Donner (objet en main)", "yellow", "frv donner", 150);
-                d.button(pair.tu ? "Tu as besoin d'aide ?" : "Vous avez besoin d'aide ?", "light_purple", "frv aide", 150);
-                d.button("Des rumeurs ?", "aqua", "frv rumeurs", 150);
-                if (Village.fairDay()) d.button("Marchander (foire)", "gold", "frv marche", 150);
-                d.button(ru ? "Скрыть перевод" : "Показать перевод", "dark_gray", "frv ru", 150);
-            }
+        if (pair.hasFacts()) {
+            List<String> mem = new ArrayList<>();
+            if (pair.name != null) mem.add("имя: " + pair.name);
+            if (pair.jobPlace != null) mem.add("работа: " + pair.jobPlace);
+            if (pair.foodNoun != null) mem.add("еда: " + pair.foodNoun);
+            if (pair.city != null) mem.add("город: " + pair.city);
+            d.text(Txt.t("Житель помнит — " + String.join(", ", mem), "aqua"));
         }
+        d.text(Txt.t("История разговора:", "yellow"));
+        for (Entry e : s.history) {
+            if (e.player()) d.text(Txt.t("— " + e.fr(), "gray", true));
+            else d.text(Txt.join(Txt.markup("« " + e.fr() + " »", "white", e.ru())));
+        }
+        d.columns(2);
+        d.button("Отдать предмет из руки", "yellow", "frv donner", 160);
+        if (Village.fairDay()) d.button("Торговаться (ярмарка)", "gold", "frv marche", 160);
+        d.button(ru ? "Перевод: вкл" : "Перевод: выкл", "aqua", "frv ru", 160);
+        d.button("← Назад", "green", "frv retour", 160);
         d.exit("Au revoir", "frv aurevoir");
         Mc.dialog(p, d);
     }
@@ -286,7 +327,7 @@ public final class Talk {
     public static void toggleRu(ServerPlayer p) {
         VillageState.PlayerData pd = Village.pd(p);
         pd.showRu = !pd.showRu;
-        if (session(p) != null) show(p);
+        if (session(p) != null) plus(p);
         else Village.info(p, pd.showRu ? "Перевод под репликами включён." : "Перевод под репликами выключен (остаётся при наведении).", "gray");
     }
 

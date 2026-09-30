@@ -102,7 +102,7 @@ public final class Ambient {
         VillageState.PlayerData pd = Village.pd(p);
         if (pd.welcomed) return;
         pd.welcomed = true;
-        Village.later(100, () -> FrancaisVillageois.help(p));
+        // Раньше здесь выводилась длинная справка — теперь только строка при входе (см. JOIN).
     }
 
     static void greet(ServerPlayer p, Villager v, Villagers.Info info, PairState pair) {
