@@ -79,8 +79,8 @@ public final class Talk {
 
         boolean cafe = Villagers.cafeNear(Village.level(p), v.blockPosition()) != null;
         List<Line> lines = new ArrayList<>(Brain.opening(Village.ctx(info, cafe), pair));
-        if (cafe) lines.add(Line.of("On est au café ! Asseyez-vous… enfin, restez debout, il n'y a pas de chaises.",
-                "Мы в кафе! Присаживайтесь… ну, стойте, стульев нет."));
+        if (cafe) lines.add(Line.of("On prend un café ?",
+                "Выпьем кофе?"));
         long day = Village.day();
         if (pair.lastTalkDay != day) {
             pair.lastTalkDay = day;
@@ -175,8 +175,8 @@ public final class Talk {
                 d.button(Lang.cap(Lang.numberWords(offer)) + " émeraudes, ça va ?", "white", "frv offre " + Lang.numberWords(offer) + " émeraudes, ça va ?", 320);
                 d.button("D'accord, je prends !", "white", "frv offre D'accord, je prends !", 320);
                 d.button("Non, merci.", "white", "frv offre Non, merci.", 320);
-                d.input("msg", Txt.t("…или предложи свою цену по-французски:", "gray"), 200);
-                d.dynamicButton("» Envoyer", "green", "frv offre $(msg)", 320);
+                d.input("msg", Txt.t("Своя цена:", "gray"), 200);
+                d.dynamicButton("Proposer", "green", "frv offre $(msg)", 320);
             }
             default -> {
                 boolean spoke = s.history.stream().anyMatch(Entry::player);
@@ -185,11 +185,11 @@ public final class Talk {
                         pair.questItem != null, !p.getMainHandItem().isEmpty(), Village.fairDay(),
                         pair.name != null ? pair.name : p.getScoreboardName(), pair.name != null, (int) turns));
                 for (Replies.Option o : opts) d.button(o.label(), "white", o.command(), 320);
-                d.input("msg", Txt.t("…или напиши свою фразу по-французски:", "gray"), 256);
-                d.dynamicButton("» Dire", "green", "frv dire $(msg)", 320);
+                d.input("msg", Txt.t("Своя фраза:", "gray"), 256);
+                d.dynamicButton("Dire", "green", "frv dire $(msg)", 320);
             }
         }
-        d.button("ℹ Plus…", "gray", "frv plus", 320);
+        d.button("Подробнее", "gray", "frv plus", 320);
         d.exit("Au revoir", "frv aurevoir");
         Mc.dialog(p, d);
     }
@@ -242,6 +242,16 @@ public final class Talk {
 
     // ---------- Обработчики команд ----------
     public static void dire(ServerPlayer p, String text) {
+        if (text == null || text.isBlank()) {
+            if (session(p) != null) show(p);
+            else Village.info(p, "Напиши фразу после /frv dire или открой разговор: Shift + ПКМ.", "gray");
+            return;
+        }
+        text = text.strip();
+        if (text.length() > 256) {
+            Village.info(p, "Одна реплика — до 256 символов.", "gray");
+            return;
+        }
         Session s = session(p);
         Villager v = villager(p, s);
         if (v == null) {
@@ -294,12 +304,13 @@ public final class Talk {
     public static void tu(ServerPlayer p, boolean yes) {
         Session s = session(p);
         Villager v = villager(p, s);
-        if (v == null) return;
+        if (v == null || s.mode != Mode.TU_OFFER) return;
         Villagers.Info info = Villagers.info(v);
         PairState pair = Village.pair(info, p);
         s.mode = Mode.CHAT;
         s.add(new Entry(true, yes ? "Oui, on se tutoie !" : "Non, gardons le « vous ».", null));
         if (yes) {
+            if (pair.tu) { show(p); return; }
             pair.tu = true;
             pair.addFriend(5);
             syncTuToDatapack(p, v);
@@ -313,6 +324,7 @@ public final class Talk {
     }
 
     public static void bye(ServerPlayer p) {
+        Mc.closeDialog(p);
         Session s = SESSIONS.remove(p.getStringUUID());
         Villager v = villager(p, s);
         if (v == null) return;
@@ -333,12 +345,10 @@ public final class Talk {
 
     // ---------- Поручения «Apporte-moi … » ----------
     private static final List<Line> REASONS = List.of(
-            Line.of("C'est pour une expérience scientifique.", "Это для научного эксперимента."),
-            Line.of("Ne [[posez|pose]] pas de questions.", "Не задавай вопросов."),
-            Line.of("C'est urgent. Enfin… pas trop.", "Это срочно. Ну… не очень."),
-            Line.of("C'est pour un cadeau. Pour moi.", "Это для подарка. Себе."),
-            Line.of("Le golem en a besoin. Il ne le dit pas, mais je le sais.", "Голему это нужно. Он не говорит, но я знаю."),
-            Line.of("C'est pour la fête de samedi !", "Это для субботнего праздника!"));
+            Line.of("J'en ai besoin pour demain.", "Это нужно мне на завтра."),
+            Line.of("Je prépare une commande.", "Я собираю заказ."),
+            Line.of("Il ne m'en reste plus.", "У меня больше не осталось."),
+            Line.of("Je prépare le marché de samedi.", "Я готовлюсь к субботнему рынку."));
 
     static String requestFr(Items.FItem it, int n) {
         return "[[Apportez|Apporte]]-moi " + it.qty(n) + ", s'il [[vous|te]] plaît.";
@@ -363,8 +373,8 @@ public final class Talk {
         pair.questDay = Village.day();
         Line reason = REASONS.get(Village.RNG.nextInt(REASONS.size()));
         s.add(new Entry(false, Lang.R("Oui ! " + requestFr(it, n) + " " + reason.fr(), pair.tu),
-                "Житель дал поручение (перевод нарочно не показывается — пойми сам!). " + reason.ru()));
-        s.add(new Entry(false, "(Положи предметы в руку и нажми «Donner» или Shift + ПКМ по жителю.)", null));
+                null));
+        s.add(new Entry(false, "Предметы в руку → Shift + ПКМ по жителю.", null));
     }
 
     /** Игрок отдаёт предмет из руки (Shift + ПКМ с предметом или кнопка «Donner»). */

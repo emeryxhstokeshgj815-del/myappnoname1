@@ -33,6 +33,23 @@ public final class Ambient {
     private static final Map<String, Long> nextShout = new HashMap<>();
     private static final Map<String, Long> busyUntil = new HashMap<>();
 
+    static void forget(String player) {
+        nextGreet.remove(player);
+        nextChatter.remove(player);
+        nextShout.remove(player);
+    }
+
+    static void reset() {
+        nextGreet.clear();
+        nextChatter.clear();
+        nextShout.clear();
+        busyUntil.clear();
+        events.clear();
+        playing.clear();
+        nextMsgTick = 0;
+        nextThreadTick = -1;
+    }
+
     public static void tick() {
         long t = Village.tick;
         if (t % 1200 == 0) Village.cleanOrphans();
@@ -52,6 +69,10 @@ public final class Ambient {
         String id = p.getStringUUID();
         long t = Village.tick;
         ServerLevel level = Village.level(p);
+        Talk.Session session = Talk.session(p);
+        if (session != null && (Talk.villager(p, session) == null || t - session.lastTick > 2400))
+            Talk.SESSIONS.remove(id);
+        if (Math.floorMod(t / 20 + id.hashCode(), 2) == 0) InteractionHints.tick(p);
         Treasure.tick(p);
         welcome(p);
 

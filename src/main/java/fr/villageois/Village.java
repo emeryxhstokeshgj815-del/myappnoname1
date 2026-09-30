@@ -29,10 +29,12 @@ public final class Village {
     private static Path file;
     public static long tick;
     /** Метка текущего запуска — чтобы убирать «осиротевшие» пузыри после перезахода. */
-    public static final String RUN = "frv.s" + Integer.toHexString(RNG.nextInt(0xFFFFFF));
+    public static String RUN;
 
     // ---------- Жизненный цикл ----------
     public static void start(MinecraftServer server) {
+        resetRuntime();
+        RUN = "frv.s" + java.util.UUID.randomUUID().toString().replace("-", "");
         Mc.setServer(server);
         file = server.getWorldPath(LevelResource.ROOT).resolve("francais_villageois.json");
         state = VillageState.load(file);
@@ -45,7 +47,26 @@ public final class Village {
     public static void stop() {
         if (file != null) state.save(file);
         Mc.run("kill @e[type=minecraft:text_display,tag=frv.bubble]");
+        resetRuntime();
+        file = null;
+        Mc.setServer(null);
+    }
+
+    private static void resetRuntime() {
         tasks.clear();
+        Talk.SESSIONS.clear();
+        Places.reset();
+        Ambient.reset();
+        tick = 0;
+        bubbleId = 0;
+    }
+
+    public static void disconnect(ServerPlayer p) {
+        String id = p.getStringUUID();
+        Talk.SESSIONS.remove(id);
+        Places.forget(id);
+        Ambient.forget(id);
+        save();
     }
 
     public static void save() {

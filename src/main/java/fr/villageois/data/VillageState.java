@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +71,7 @@ public class VillageState {
     }
 
     public static class PlayerData {
+        public boolean interactionHints = true;
         public boolean chatEnabled = true;
         public boolean showRu = false;
         public List<Carnet> carnet = new ArrayList<>();
@@ -95,21 +97,48 @@ public class VillageState {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
     public static VillageState load(Path file) {
-        if (Files.exists(file)) {
-            try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+        Path backup = file.resolveSibling(file.getFileName() + ".bak");
+        for (Path candidate : List.of(file, backup)) {
+            if (!Files.exists(candidate)) continue;
+            try (Reader r = Files.newBufferedReader(candidate, StandardCharsets.UTF_8)) {
                 VillageState s = GSON.fromJson(r, VillageState.class);
-                if (s != null) {
-                    if (s.pairs == null) s.pairs = new HashMap<>();
-                    if (s.players == null) s.players = new HashMap<>();
-                    if (s.threadUsedDay == null) s.threadUsedDay = new HashMap<>();
-                    if (s.villages == null) s.villages = new ArrayList<>();
-                    return s;
-                }
+                if (s == null) throw new IOException("Empty progress file");
+                s.normalize();
+                return s;
             } catch (Exception e) {
-                fr.villageois.FrancaisVillageois.LOG.error("Не удалось прочитать {}", file, e);
+                fr.villageois.FrancaisVillageois.LOG.error("Не удалось прочитать {}", candidate, e);
             }
         }
         return new VillageState();
+    }
+
+    private void normalize() {
+        if (pairs == null) pairs = new HashMap<>();
+        if (players == null) players = new HashMap<>();
+        if (threadUsedDay == null) threadUsedDay = new HashMap<>();
+        if (villages == null) villages = new ArrayList<>();
+        pairs.values().removeIf(java.util.Objects::isNull);
+        players.values().removeIf(java.util.Objects::isNull);
+        villages.removeIf(java.util.Objects::isNull);
+        pairs.values().forEach(p -> p.friend = Math.max(0, Math.min(100, p.friend)));
+        for (PlayerData p : players.values()) {
+            if (p.carnet == null) p.carnet = new ArrayList<>();
+            if (p.heard == null) p.heard = new ArrayList<>();
+            if (p.chests == null) p.chests = new ArrayList<>();
+            if (p.library == null) p.library = new HashMap<>();
+            if (p.civics == null) p.civics = new ArrayList<>();
+            if (p.civicsDone == null) p.civicsDone = new ArrayList<>();
+            p.carnet.removeIf(java.util.Objects::isNull);
+            p.heard.removeIf(java.util.Objects::isNull);
+            p.chests.removeIf(java.util.Objects::isNull);
+            p.civics.removeIf(c -> c == null || c.id == null);
+            p.library.replaceAll((key, value) -> value == null ? 0 : Math.max(0, Math.min(4, value)));
+        }
+        villages.removeIf(v -> v.dim == null);
+        for (VillageRec v : villages) {
+            if (v.built == null) v.built = new ArrayList<>();
+            v.built.removeIf(b -> b == null || b.type == null);
+        }
     }
 
     public void save(Path file) {
@@ -118,7 +147,20 @@ public class VillageState {
             try (Writer w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
                 GSON.toJson(this, w);
             }
-            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            if (Files.exists(file)) {
+                // Never replace the last good backup with a damaged primary file.
+                boolean valid;
+                try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    valid = GSON.fromJson(r, VillageState.class) != null;
+                } catch (Exception e) { valid = false; }
+                Path copy = file.resolveSibling(file.getFileName() + (valid ? ".bak" : ".corrupt-" + java.util.UUID.randomUUID()));
+                Files.copy(file, copy, StandardCopyOption.REPLACE_EXISTING);
+            }
+            try {
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             fr.villageois.FrancaisVillageois.LOG.error("Не удалось сохранить {}", file, e);
         }

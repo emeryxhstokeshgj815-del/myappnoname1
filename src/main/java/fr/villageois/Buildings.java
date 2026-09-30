@@ -52,31 +52,10 @@ public final class Buildings {
     public static void tick(ServerPlayer p) {
         if (!Village.state.autoBuild) return;
         ServerLevel level = Village.level(p);
-        upgrade(p, level);
         if (Villagers.around(level, p, 40).size() < 2) return;
         BlockPos bell = Villagers.bellNear(level, p.blockPosition(), 40);
         if (bell == null || known(level, bell) != null) return;
         buildVillage(p, bell);
-    }
-
-    /** Перестроить на месте постройки старых версий (например, с «лишним полом» из версии 1). */
-    static void upgrade(ServerPlayer p, ServerLevel level) {
-        String dim = level.dimension().location().toString();
-        for (VillageState.VillageRec v : Village.state.villages) {
-            if (!v.dim.equals(dim) || p.distanceToSqr(v.x, v.y, v.z) > 96 * 96) continue;
-            boolean any = false;
-            for (VillageState.Built b : v.built) {
-                if (b.v >= VERSION) continue;
-                build(b.type, b.x, b.y, b.z, doorSide(b.x, b.z, new BlockPos(v.x, v.y, v.z)));
-                b.v = VERSION;
-                any = true;
-            }
-            if (any) {
-                Village.save();
-                Mc.tellraw(p, Txt.join(Txt.t("⚒ Le maire a tout rénové ! ", "gold"), Txt.t("Постройки деревни перестроены в новом виде.", "yellow")));
-                Mc.sound(p, "minecraft:ui.toast.challenge_complete", 0.7f, 1.2f);
-            }
-        }
     }
 
     public static VillageState.VillageRec known(ServerLevel level, BlockPos pos) {
@@ -104,7 +83,7 @@ public final class Buildings {
             int[] site = findSite(level, center, taken);
             if (site == null) { missing.add(title(type)); continue; }
             taken.add(site);
-            build(type, site[0], site[1], site[2], doorSide(site[0], site[2], center));
+            build(level, type, site[0], site[1], site[2], doorSide(site[0], site[2], center));
             VillageState.Built b = new VillageState.Built();
             b.type = type;
             b.x = site[0];
@@ -145,7 +124,7 @@ public final class Buildings {
                 if (overlaps(x0, z0, taken)) continue;
                 Integer y = siteHeight(level, x0, z0);
                 if (y == null || Math.abs(y - center.getY()) > 8) continue;
-                AABB box = new AABB(x0 - 1, y - 1, z0 - 1, x0 + SIZE + 1, y + 6, z0 + SIZE + 1);
+                AABB box = new AABB(x0 - 1, y - 4, z0 - 1, x0 + SIZE + 1, y + 12, z0 + SIZE + 1);
                 if (!level.getEntitiesOfClass(LivingEntity.class, box, e -> true).isEmpty()) continue;
                 return new int[]{x0, y, z0};
             }
@@ -166,19 +145,31 @@ public final class Buildings {
         for (int dx = -1; dx <= SIZE; dx++) {
             for (int dz = -1; dz <= SIZE; dz++) {
                 int x = x0 + dx, z = z0 + dz;
+                if (!level.hasChunkAt(new BlockPos(x, 0, z))) return null;
                 int h = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                BlockState top = level.getBlockState(new BlockPos(x, h - 1, z));
+                BlockPos ground = new BlockPos(x, h - 1, z);
+                if (!level.hasChunkAt(ground) || !level.getWorldBorder().isWithinBounds(ground)) return null;
+                BlockState top = level.getBlockState(ground);
                 if (!natural(top)) return null;
-                // Над участком ничего чужого (стены домов, фонари, деревья сверху).
-                for (int up = 0; up < 5; up++) {
-                    BlockState above = level.getBlockState(new BlockPos(x, h + up, z));
-                    if (!above.isAir() && !above.canBeReplaced()) return null;
-                }
                 min = Math.min(min, h);
                 max = Math.max(max, h);
             }
         }
         if (max - min > 2) return null;
+        if (max - 4 < level.getMinY() || max + 11 > level.getMaxY()) return null;
+        // Validate the whole volume that build() will clear, including roof and foundation.
+        for (int dx = -1; dx <= SIZE; dx++) {
+            for (int dz = -1; dz <= SIZE; dz++) {
+                for (int y = max - 4; y <= max + 11; y++) {
+                    BlockPos pos = new BlockPos(x0 + dx, y, z0 + dz);
+                    BlockState block = level.getBlockState(pos);
+                    if (level.getBlockEntity(pos) != null || !block.getFluidState().isEmpty()) return null;
+                    if (y < max) {
+                        if (!block.isAir() && !natural(block) && !block.is(Blocks.BEDROCK) && !block.canBeReplaced()) return null;
+                    } else if (!block.isAir() && !block.canBeReplaced()) return null;
+                }
+            }
+        }
         return max;
     }
 
@@ -197,11 +188,11 @@ public final class Buildings {
     }
 
     // ---------- Как строить ----------
-    /** Версия чертежей. Постройки старых версий перестраиваются на месте. */
+    /** Версия чертежей новых построек. Существующие здания не перезаписываются. */
     public static final int VERSION = 2;
 
     /** Локальные координаты: дверь в середине стены z=6 («юг»). Поворот — под сторону двери. */
-    record Frame(int x0, int y, int z0, int side) {
+    record Frame(int x0, int y, int z0, int side, String dimension) {
         int wx(int lx, int lz) {
             return x0 + switch (side) {
                 case 1 -> 6 - lx;
@@ -250,12 +241,16 @@ public final class Buildings {
             return wx(lx, lz) + " " + (y + ly) + " " + wz(lx, lz);
         }
 
+        void run(String command) {
+            Mc.run("execute in " + dimension + " run " + command);
+        }
+
         void set(int lx, int ly, int lz, String block) {
-            Mc.run("setblock " + pos(lx, ly, lz) + " " + block);
+            run("setblock " + pos(lx, ly, lz) + " " + block);
         }
 
         void fill(int ax, int ay, int az, int bx, int by, int bz, String block) {
-            Mc.run("fill " + pos(ax, ay, az) + " " + pos(bx, by, bz) + " " + block);
+            run("fill " + pos(ax, ay, az) + " " + pos(bx, by, bz) + " " + block);
         }
     }
 
@@ -263,11 +258,10 @@ public final class Buildings {
         return "{front_text:{messages:[\"\"," + Txt.q(line1) + "," + Txt.q(line2) + ",\"\"],color:\"black\",has_glowing_text:true},is_waxed:true}";
     }
 
-    public static void build(String type, int x0, int y, int z0, int side) {
-        Frame f = new Frame(x0, y, z0, side);
+    public static void build(ServerLevel level, String type, int x0, int y, int z0, int side) {
+        Frame f = new Frame(x0, y, z0, side, level.dimension().location().toString());
         // Площадка: фундамент, полная расчистка (крыша до y+7, флаг до y+10), дорожка у входа.
         f.fill(-1, -4, -1, 7, -2, 7, "minecraft:cobblestone replace #minecraft:replaceable");
-        f.fill(0, -4, 0, 6, -2, 6, "minecraft:cobblestone");
         f.fill(-1, 0, -1, 7, 11, 7, "minecraft:air");
         f.fill(1, -1, 7, 5, -1, 7, "minecraft:cobblestone");
         f.set(3, -1, 7, "minecraft:mossy_cobblestone");
@@ -277,9 +271,9 @@ public final class Buildings {
             case "marche" -> market(f);
             default -> townHall(f);
         }
-        Mc.run("particle minecraft:happy_villager " + f.pos(3, 2, 3) + " 3 2 3 0 80 force");
-        Mc.run("particle minecraft:end_rod " + f.pos(3, 4, 3) + " 3 3 3 0.02 60 force");
-        Mc.run("playsound minecraft:block.amethyst_block.chime block @a " + f.pos(3, 1, 3) + " 2 1");
+        f.run("particle minecraft:happy_villager " + f.pos(3, 2, 3) + " 3 2 3 0 80 force");
+        f.run("particle minecraft:end_rod " + f.pos(3, 4, 3) + " 3 3 3 0.02 60 force");
+        f.run("playsound minecraft:block.amethyst_block.chime block @a " + f.pos(3, 1, 3) + " 2 1");
     }
 
     /** Материалы дома. */
@@ -477,7 +471,7 @@ public final class Buildings {
             if (site == null) site = findSite(level, p.blockPosition(), taken);
             if (site == null) continue;
             taken.add(site);
-            build(type, site[0], site[1], site[2], doorSide(site[0], site[2], center));
+            build(level, type, site[0], site[1], site[2], doorSide(site[0], site[2], center));
             VillageState.Built b = new VillageState.Built();
             b.type = type;
             b.x = site[0];

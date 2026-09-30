@@ -60,6 +60,7 @@ public class FrancaisVillageois implements ModInitializer {
             Village.later(60, () -> Mc.tellraw(p, Txt.join(Txt.t("✔ Мод Français Villageois загружен. ", "green"),
                     Txt.t("Shift + ПКМ по жителю — разговор, ", "gray"), Txt.click("/frv", "yellow", "frv", "Справка"), Txt.t(" — справка.", "gray"))));
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Village.disconnect(handler.getPlayer()));
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Village.stop());
         ServerTickEvents.END_SERVER_TICK.register(s -> {
             Village.tick++;
@@ -120,12 +121,22 @@ public class FrancaisVillageois implements ModInitializer {
                 .then(Commands.literal("rumeurs").executes(c -> as(c, p -> Talk.dire(p, "Vous connaissez des rumeurs ?"))))
                 .then(Commands.literal("marche").executes(c -> as(c, Market::start)))
                 .then(Commands.literal("offre")
+                        .executes(c -> as(c, p -> Market.offer(p, "")))
                         .then(Commands.argument("texte", StringArgumentType.greedyString())
                                 .executes(c -> as(c, p -> Market.offer(p, StringArgumentType.getString(c, "texte"))))))
                 .then(Commands.literal("tu")
                         .then(Commands.literal("oui").executes(c -> as(c, p -> Talk.tu(p, true))))
                         .then(Commands.literal("non").executes(c -> as(c, p -> Talk.tu(p, false)))))
                 .then(Commands.literal("ru").executes(c -> as(c, Talk::toggleRu)))
+                .then(Commands.literal("effets")
+                        .then(Commands.literal("on").executes(c -> as(c, p -> {
+                            Village.pd(p).interactionHints = true;
+                            Village.info(p, "Частицы у жителей, пюпитров и колоколов включены.", "gray");
+                        })))
+                        .then(Commands.literal("off").executes(c -> as(c, p -> {
+                            Village.pd(p).interactionHints = false;
+                            Village.info(p, "Частицы взаимодействия выключены.", "gray");
+                        }))))
                 .then(Commands.literal("feedback")
                         .then(Commands.literal("on").executes(c -> as(c, p -> { Village.state.quietFeedback = false; Mc.run("gamerule sendCommandFeedback true"); Village.info(p, "Служебные отклики команд снова видны.", "gray"); })))
                         .then(Commands.literal("off").executes(c -> as(c, p -> { Village.state.quietFeedback = true; Mc.run("gamerule sendCommandFeedback false"); Village.info(p, "Служебные отклики команд скрыты.", "gray"); }))))
@@ -164,15 +175,14 @@ public class FrancaisVillageois implements ModInitializer {
     public static void help(ServerPlayer p) {
         String[] lines = {
                 "━━━━━━━━ Français Villageois ━━━━━━━━",
-                "• ПКМ по жителю — урок-викторина из датапака (как раньше).",
-                "• Shift + ПКМ пустой рукой — окно разговора: пиши по-французски в поле, житель ответит.",
-                "• Shift + ПКМ с предметом в руке — отдать предмет для поручения «Apporte-moi…».",
-                "• Кафе — поставь костёр: у костра жители болтают охотнее и шепчутся о кладах.",
-                "• Библиотека — Shift + ПКМ по пюпитру. Мэрия — Shift + ПКМ по колоколу.",
-                "• Рынок — по субботам ярмарка: торговцы кричат цены, в окне разговора — «Marchander».",
-                "• /frv journal — слухи и клады · /frv carnet — как жители тебя поправляли · /frv amis — друзья",
-                "• Постройки: у колокола деревни мод сам строит Le Café, La Bibliothèque, Le Marché, La Mairie · /frv batiments — где они",
-                "• /frv ru — перевод под репликами · /frv chat off — выключить чат деревни"};
+                "ПКМ по жителю — викторина. Shift + ПКМ пустой рукой — разговор.",
+                "Shift + ПКМ с предметом — передать его жителю.",
+                "Shift + ПКМ пустой рукой: пюпитр — книги, колокол — поручения.",
+                "Частицы отмечают жителей и места взаимодействия рядом. /frv effets off — скрыть.",
+                "По субботам — ярмарка. Торг доступен в окне разговора.",
+                "/frv journal — задания и слухи · /frv carnet — исправления · /frv amis — друзья",
+                "/frv batiments — координаты зданий · /frv construire — достроить деревню",
+                "/frv ru — перевод · /frv chat off — отключить чат деревни"};
         for (String l : lines) Mc.tellraw(p, Txt.t(l, l.startsWith("━") ? "gold" : "gray"));
     }
 
