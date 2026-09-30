@@ -110,8 +110,8 @@ public final class Brain {
             p.jobLabel = f.job().label();
             p.jobPlace = f.job().place();
             learned = true;
-            out.add(reg(Line.of("Ah, [[vous travaillez|tu travailles]] " + p.jobPlace + " ? C'est super ! Moi, je travaille… ici. Tout le temps.",
-                    "О, работаешь " + p.jobPlace + "? Здорово! А я работаю… тут. Всё время."), tu));
+            out.add(reg(Line.of("Ah, [[vous travaillez|tu travailles]] " + p.jobPlace + "  ? Comment ça se passe ?",
+                    "О, работаешь " + p.jobPlace + "? Как дела на работе?"), tu));
         }
         if (f.foodNoun() != null) {
             p.foodArt = f.foodArt();
@@ -119,20 +119,20 @@ public final class Brain {
             learned = true;
             String what = f.foodArt().endsWith("'") ? f.foodArt() + f.foodNoun() : f.foodArt() + " " + f.foodNoun();
             out.add(reg(Lang.RNG.nextBoolean()
-                    ? Line.of("Ah, [[vous aimez|tu aimes]] " + what + " ? Moi aussi ! On est faits pour s'entendre.", "Любишь " + what + "? Я тоже! Мы созданы друг для друга.")
-                    : Line.of("Ah, " + what + " ! Bon choix. Moi, je préfère le pain. Le pain, c'est la vie.", what + "! Хороший выбор. А я предпочитаю хлеб. Хлеб — это жизнь."), tu));
+                    ? Line.of("Ah, [[vous aimez|tu aimes]] " + what + " ? Moi aussi !", "Любишь " + what + "? Я тоже!")
+                    : Line.of("Ah, " + what + " ! Moi, je préfère le pain.", what + "! А я предпочитаю хлеб."), tu));
         }
         if (f.city() != null) {
             p.city = f.city();
             learned = true;
-            out.add(Line.of(p.city + " ? C'est loin ? Plus loin que la forêt ? Moi, je ne suis jamais allé plus loin que le puits.",
-                    p.city + "? Это далеко? Дальше леса? Я никогда не был дальше колодца."));
+            out.add(Line.of(p.city + " ? C'est loin d'ici ?",
+                    p.city + "? Это далеко отсюда?"));
         }
         if (f.age() != null) {
             p.age = f.age();
             learned = true;
-            out.add(Line.of(f.age() + " ans ? Moi, j'ai… un certain âge. Plus vieux que le puits.",
-                    f.age() + " лет? А мне… определённый возраст. Старше колодца."));
+            out.add(Line.of(f.age() + " ans ? D'accord, je m'en souviendrai.",
+                    f.age() + " лет? Хорошо, запомню."));
         }
         if (learned) p.factsDay = c.day();
 

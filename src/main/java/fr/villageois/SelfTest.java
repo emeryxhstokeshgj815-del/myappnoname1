@@ -120,6 +120,11 @@ public final class SelfTest {
         step("открытие окна разговора", () -> Talk.open(fake, lea));
         check(Talk.session(fake) != null, "сессия разговора создана");
         step("реплика с ошибкой", () -> Talk.dire(fake, "Bonjour ! Je m'appelle Paul, je suis professeur. Je veux fromage."));
+        int historySize = Talk.session(fake).history.size();
+        int friendshipBeforeBlank = pair.friend;
+        step("пустая реплика", () -> Talk.dire(fake, "   "));
+        check(Talk.session(fake).history.size() == historySize && pair.friend == friendshipBeforeBlank,
+                "пустая реплика не меняет историю и дружбу");
         check("Paul".equals(pair.name), "житель запомнил имя");
         check("à l'école".equals(pair.jobPlace), "житель запомнил работу");
         check(!Village.pd(fake).carnet.isEmpty(), "recast записан в carnet");
@@ -148,6 +153,9 @@ public final class SelfTest {
         step("окно друга (предложение tu, секрет)", () -> Talk.open(fake, lea));
         step("согласие на tu", () -> Talk.tu(fake, true));
         check(pair.tu, "переход на tu");
+        int friendshipAfterTu = pair.friend;
+        Talk.tu(fake, true);
+        check(pair.friend == friendshipAfterTu, "повторная команда tu не даёт дружбу");
         step("прощание", () -> Talk.bye(fake));
 
         // 6. Ярмарка и торг.
@@ -163,17 +171,30 @@ public final class SelfTest {
         // 7. Библиотека и мэрия.
         step("меню библиотеки", () -> Places.libraryMenu(fake));
         step("чтение книги", () -> {
+            Places.read(fake, "chat", 3, "F");
+            check(!Village.pd(fake).library.containsKey("chat"), "нельзя завершить книгу без чтения");
             Places.read(fake, "chat", 0, "X");
+            Places.read(fake, "chat", 3, "F");
+            Places.read(fake, "chat", 0, "");
+            Places.read(fake, "chat", 0, "F");
             Places.read(fake, "chat", 0, "F");
             Places.read(fake, "chat", 1, "V");
             Places.read(fake, "chat", 2, "N");
             Places.read(fake, "chat", 3, "F");
         });
         check(Integer.valueOf(4).equals(Village.pd(fake).library.get("chat")), "книга засчитана 4/4");
+        Places.read(fake, "chat", 3, "F");
+        check(Integer.valueOf(4).equals(Village.pd(fake).library.get("chat")), "повтор финального ответа не меняет результат");
+        Mc.run("time set 1000");
         step("доска мэрии", () -> Places.mairie(fake, null));
         step("принять задание мэрии", () -> Places.mairieAccept(fake, "pont"));
         check(Village.pd(fake).civics.stream().anyMatch(c -> c.id.equals("pont")), "задание мэрии принято");
         step("сдать задание мэрии (не хватает)", () -> Places.mairieDeliver(fake, "pont"));
+        Village.pd(fake).civics.removeIf(c -> c.id.equals("pont"));
+        Village.pd(fake).civicsDone.add("pont@" + Village.day());
+        Places.mairieAccept(fake, "pont");
+        check(Village.pd(fake).civics.stream().noneMatch(c -> c.id.equals("pont")), "выполненное сегодня поручение нельзя принять снова");
+        Mc.run("time set " + (Content.FAIR_WEEKDAY * 24000L + 1000));
 
         // 8. Клад из слуха: сундук реально ставится.
         step("клад из слуха", () -> {
@@ -200,6 +221,15 @@ public final class SelfTest {
         });
 
         // 10. Аудит построек: у колокола деревни должны появиться кафе, библиотека, рынок и мэрия.
+        step("участок с подземным сундуком не застраивается", () -> {
+            check(Buildings.siteHeight(level, 20, 20) != null, "чистый участок подходит");
+            Mc.run("setblock 23 " + (y - 2) + " 23 minecraft:chest");
+            check(Buildings.siteHeight(level, 20, 20) == null, "подземный сундук защищён");
+            Mc.run("setblock 23 " + (y - 2) + " 23 minecraft:dirt");
+            Mc.run("setblock 23 " + (y + 9) + " 23 minecraft:oak_leaves[persistent=true]");
+            check(Buildings.siteHeight(level, 20, 20) == null, "объём крыши проверяется до верха");
+            Mc.run("setblock 23 " + (y + 9) + " 23 minecraft:air");
+        });
         step("постройки у колокола", () -> {
             Mc.run("setblock 0 " + y + " 0 minecraft:bell[attachment=floor,facing=north]");
             Village.state.autoBuild = true;
@@ -220,6 +250,26 @@ public final class SelfTest {
             Talk.open(fake, lea);
             Talk.plus(fake);
             Talk.show(fake);
+        });
+        step("маркеры взаимодействия и выключатель", () -> {
+            Talk.SESSIONS.remove(fake.getStringUUID());
+            List<String> markers = new ArrayList<>();
+            var previousAudit = Mc.audit;
+            Mc.audit = command -> { previousAudit.accept(command); if (command.contains(" run particle ")) markers.add(command); };
+            try {
+                Village.pd(fake).interactionHints = true;
+                InteractionHints.tick(fake);
+                check(!markers.isEmpty() && markers.stream().allMatch(c -> c.endsWith(" normal FrvTester")), "маркеры адресованы только игроку");
+                markers.clear();
+                Village.pd(fake).interactionHints = false;
+                InteractionHints.tick(fake);
+                check(markers.isEmpty(), "выключенные маркеры не отправляются");
+            } finally { Mc.audit = previousAudit; }
+        });
+        step("очистка разговора при выходе", () -> {
+            Talk.open(fake, lea);
+            Village.disconnect(fake);
+            check(Talk.session(fake) == null, "сессия удалена при выходе");
         });
 
         Village.later(20 * 16, () -> finish(server));

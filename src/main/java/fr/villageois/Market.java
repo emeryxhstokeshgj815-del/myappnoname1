@@ -66,7 +66,13 @@ public final class Market {
     public static void offer(ServerPlayer p, String text) {
         Talk.Session s = Talk.session(p);
         Villager v = Talk.villager(p, s);
-        if (v == null || s.haggle == null) return;
+        if (v == null || s.mode != Talk.Mode.HAGGLE || s.haggle == null) return;
+        if (text == null || text.isBlank()) { Talk.show(p); return; }
+        if (text.length() > 200) {
+            Village.info(p, "Предложение цены — до 200 символов.", "gray");
+            return;
+        }
+        s.lastTick = Village.tick;
         Villagers.Info info = Villagers.info(v);
         PairState pair = Village.pair(info, p);
         Haggle h = s.haggle;

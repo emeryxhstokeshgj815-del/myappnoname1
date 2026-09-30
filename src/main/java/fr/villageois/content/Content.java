@@ -40,13 +40,13 @@ public final class Content {
     // ---------- Приветствия при встрече ----------
     public static final List<Line> GREET_MATIN = List.of(
             Line.of("Bonjour ! Bien dormi ?", "Доброе утро! Хорошо спалось?"),
-            Line.of("Bonjour ! Il est tôt… même les poules dorment encore.", "Доброе утро! Рано… даже куры ещё спят."),
-            Line.of("Bonjour, bonjour ! Le café n'est pas encore prêt. Moi non plus.", "Доброе утро! Кофе ещё не готов. Я тоже."),
+            Line.of("Bonjour ! Je pars travailler. Et [[vous|toi]] ?", "Доброе утро! Я иду работать. А ты?"),
+            Line.of("Bonjour ! On prend un café ?", "Доброе утро! Выпьем кофе?"),
             Line.of("Ah, bonjour ! [[Vous êtes|Tu es]] matinal aujourd'hui !", "А, доброе утро! Ты сегодня ранняя пташка!"));
     public static final List<Line> GREET_APRES_MIDI = List.of(
             Line.of("Bonjour ! Belle journée, non ?", "Добрый день! Прекрасный день, правда?"),
-            Line.of("Bonjour ! [[Vous avez|Tu as]] déjeuné ? Moi, trois fois.", "Добрый день! Ты обедал? Я — три раза."),
-            Line.of("Salut ! Oh pardon… Bonjour ! C'est plus poli.", "Привет! Ой, простите… Здравствуйте! Так вежливее."),
+            Line.of("Bonjour ! [[Vous avez|Tu as]] déjà déjeuné ?", "Добрый день! Ты уже обедал?"),
+            Line.of("Bonjour ! Ça fait plaisir de [[vous|te]] voir.", "Здравствуйте! Рад тебя видеть."),
             Line.of("Bonjour ! Attention, le golem est de mauvaise humeur aujourd'hui.", "Добрый день! Осторожно, голем сегодня не в духе."));
     public static final List<Line> GREET_SOIR = List.of(
             Line.of("Bonsoir ! La journée est finie, enfin !", "Добрый вечер! День наконец-то закончился!"),
@@ -56,7 +56,7 @@ public final class Content {
     public static final List<Line> GREET_NUIT = List.of(
             Line.of("Bonsoir… Il est tard ! Pourquoi [[vous ne dormez|tu ne dors]] pas ?", "Добрый вечер… Уже поздно! Почему не спишь?"),
             Line.of("Chut ! Les zombies écoutent. Bonne nuit !", "Тсс! Зомби подслушивают. Спокойной ночи!"),
-            Line.of("Bonne nuit ! Enfin… si les zombies sont d'accord.", "Спокойной ночи! Ну… если зомби не против."));
+            Line.of("Bonne nuit ! Fermez bien la porte.", "Спокойной ночи! Закройте дверь как следует."));
     public static final List<Line> GREET_PLUIE = List.of(
             Line.of("Quel temps ! Il pleut encore…", "Ну и погодка! Опять дождь…"),
             Line.of("Il pleut ! Mes carottes sont contentes. Moi, non.", "Дождь! Моя морковь довольна. Я — нет."),
@@ -70,15 +70,15 @@ public final class Content {
     public record Persona(Line job, List<Line> jokes, Line likes) {}
 
     public static final Persona[] PERSONAS = {
-            new Persona(Line.of("Mon travail ? Je ne fais rien. C'est très fatigant.", "Моя работа? Я ничего не делаю. Это очень утомительно."),
+            new Persona(Line.of("Je m'occupe du village. Il y a toujours quelque chose à faire.", "Я занимаюсь делами деревни. Всегда найдётся работа."),
                     List.of(Line.of("Hier, j'ai regardé un mur pendant trois heures. Il n'a rien dit. Moi non plus.", "Вчера я три часа смотрел на стену. Она ничего не сказала. Я тоже."),
                             Line.of("Je suis villageois professionnel. Je marche, je dis « hmm », je rentre.", "Я профессиональный житель. Хожу, говорю «хмм», иду домой.")),
                     Line.of("J'aime les lits. Surtout le mien.", "Я люблю кровати. Особенно свою.")),
-            new Persona(Line.of("Je suis [[fermier|fermier]]. Je parle à mes carottes. Elles ne répondent pas, mais elles écoutent.", "Я фермер. Разговариваю с морковкой. Она не отвечает, но слушает."),
+            new Persona(Line.of("Je travaille aux champs. En ce moment, je récolte les carottes.", "Я работаю в поле. Сейчас собираю морковь."),
                     List.of(Line.of("Une carotte m'a regardé bizarrement ce matin. Je l'ai mangée. Problème réglé.", "Одна морковка сегодня странно на меня посмотрела. Я её съел. Проблема решена."),
                             Line.of("Mon blé pousse plus vite quand je chante. Les voisins, non.", "Моя пшеница растёт быстрее, когда я пою. Соседи — нет.")),
                     Line.of("J'aime le pain. Le pain, c'est du blé qui a réussi sa vie.", "Я люблю хлеб. Хлеб — это пшеница, которая добилась успеха.")),
-            new Persona(Line.of("Je suis boucher. Les cochons ne m'invitent jamais à leurs fêtes.", "Я мясник. Свиньи никогда не зовут меня на свои праздники."),
+            new Persona(Line.of("Je travaille à la boucherie. Le magasin ouvre le matin.", "Я работаю в мясной лавке. Магазин открывается утром."),
                     List.of(Line.of("Un poulet m'a suivi toute la journée. Je crois qu'il veut une explication.", "Весь день за мной ходила курица. Кажется, она требует объяснений."),
                             Line.of("Je suis végétarien le dimanche. Le lundi, ça va mieux.", "По воскресеньям я вегетарианец. В понедельник становится лучше.")),
                     Line.of("J'aime les côtelettes. Et les cochons. Mais pas en même temps.", "Я люблю отбивные. И свиней. Но не одновременно.")),
@@ -86,31 +86,31 @@ public final class Content {
                     List.of(Line.of("Le poisson était grand comme ça ! Non, plus grand. Non, comme une maison.", "Рыба была вот такая! Нет, больше. Нет, как дом."),
                             Line.of("Un jour, j'ai pêché une botte. Elle était à ma taille. Je la porte encore.", "Однажды я выловил сапог. Он был моего размера. Ношу до сих пор.")),
                     Line.of("J'aime le saumon. Le saumon, lui, ne m'aime pas.", "Я люблю лосося. А он меня — нет.")),
-            new Persona(Line.of("Je suis berger. J'ai quarante moutons. Ils s'appellent tous Bernard.", "Я пастух. У меня сорок овец. Всех зовут Бернар."),
+            new Persona(Line.of("Je garde les moutons. Aujourd'hui, je dois préparer la laine pour le marché.", "Я пасу овец. Сегодня надо подготовить шерсть к рынку."),
                     List.of(Line.of("Pour dormir, je compte mes moutons. Il en manque toujours un. C'est Bernard.", "Чтобы уснуть, я считаю овец. Одной всегда не хватает. Это Бернар."),
                             Line.of("Un mouton rose, c'est rare. Moi, j'en ai un. Il est très fier.", "Розовая овца — редкость. У меня такая есть. Она очень гордая.")),
                     Line.of("J'aime la laine. C'est doux, comme mes moutons. Sauf Bernard.", "Я люблю шерсть. Она мягкая, как мои овцы. Кроме Бернара.")),
-            new Persona(Line.of("Je suis maroquinier. Je fais des chapeaux en cuir. Personne ne les porte.", "Я кожевник. Делаю кожаные шляпы. Никто их не носит."),
+            new Persona(Line.of("Je travaille le cuir. Je fabrique des bottes et des vestes.", "Я работаю с кожей. Делаю сапоги и куртки."),
                     List.of(Line.of("Mon chapeau en cuir est à la mode. Enfin, dans ma tête.", "Моя кожаная шляпа в моде. Ну, в моей голове."),
                             Line.of("J'ai fait un pantalon pour une vache. Elle n'a pas dit merci.", "Я сшил штаны для коровы. Она не сказала спасибо.")),
                     Line.of("J'aime le cuir. Les vaches, moins.", "Я люблю кожу. Коров — меньше.")),
-            new Persona(Line.of("Je suis [[bibliothécaire|bibliothécaire]]. Je lis tout. Même les étiquettes des pots de confiture.", "Я библиотекарь. Читаю всё. Даже этикетки на банках с вареньем."),
+            new Persona(Line.of("Je travaille à la bibliothèque. Quel genre de livres [[vous aimez|tu aimes]] ?", "Я работаю в библиотеке. Какие книги ты любишь?"),
                     List.of(Line.of("Une chèvre a mangé un livre de grammaire. Maintenant, elle dit « bê-ê-ê » au subjonctif.", "Коза съела учебник грамматики. Теперь она говорит «бе-е-е» в сослагательном наклонении."),
                             Line.of("Chut ! Ici, on parle doucement. Sauf moi, quand je trouve une faute.", "Тсс! Здесь говорят тихо. Кроме меня, когда я нахожу ошибку.")),
                     Line.of("J'aime les livres. Et le silence. Surtout le silence.", "Я люблю книги. И тишину. Особенно тишину.")),
-            new Persona(Line.of("Je suis cartographe. Je fais des cartes. Mais je me perds tout le temps.", "Я картограф. Рисую карты. Но постоянно теряюсь."),
+            new Persona(Line.of("Je dessine des cartes de la région. [[Vous cherchez|Tu cherches]] un endroit précis ?", "Я рисую карты окрестностей. Ты ищешь какое-то определённое место?"),
                     List.of(Line.of("Hier, j'ai cherché ma maison pendant deux heures. J'étais dedans.", "Вчера я два часа искал свой дом. Я был внутри."),
                             Line.of("Le nord, c'est par là. Ou par là. Bon, c'est quelque part.", "Север — там. Или там. Ну, где-то он есть.")),
                     Line.of("J'aime les cartes. Surtout celles avec « Vous êtes ici ».", "Я люблю карты. Особенно те, где написано «Вы здесь».")),
-            new Persona(Line.of("Je suis [[prêtre|prêtre]]. Je sonne la cloche. Parfois, la cloche me sonne.", "Я священник. Звоню в колокол. Иногда колокол звонит мне."),
+            new Persona(Line.of("Je m'occupe de l'église et je prépare des potions.", "Я слежу за церковью и готовлю зелья."),
                     List.of(Line.of("Je vends de la redstone. Je ne sais pas à quoi ça sert, mais ça brille.", "Я продаю редстоун. Не знаю, зачем он нужен, но он блестит."),
                             Line.of("J'ai prié pour la pluie. Maintenant, je prie pour le soleil. Je suis très occupé.", "Я молился о дожде. Теперь молюсь о солнце. Я очень занят.")),
                     Line.of("J'aime la tranquillité. Et les cookies.", "Я люблю спокойствие. И печенье.")),
-            new Persona(Line.of("Je suis armurier. Je fais des armures. Même pour les poules, si [[vous payez|tu paies]].", "Я бронник. Делаю доспехи. Даже для кур, если заплатишь."),
+            new Persona(Line.of("Je fabrique des armures. Il me reste quelques casques en fer.", "Я делаю доспехи. У меня осталось несколько железных шлемов."),
                     List.of(Line.of("Un zombie a acheté un casque. Maintenant, il n'a plus peur du soleil. Ma faute.", "Зомби купил шлем. Теперь он не боится солнца. Моя вина."),
                             Line.of("Mon armure en fer est très solide. Je le sais : je suis tombé dans l'escalier avec.", "Моя железная броня очень прочная. Проверено: упал в ней с лестницы.")),
                     Line.of("J'aime le fer. C'est lourd, mais c'est fidèle.", "Я люблю железо. Оно тяжёлое, но верное.")),
-            new Persona(Line.of("Je fais des armes. Mais moi, j'ai peur des araignées.", "Я делаю оружие. Но сам боюсь пауков."),
+            new Persona(Line.of("Je forge des épées et des haches. La forge est juste à côté.", "Я кую мечи и топоры. Кузница совсем рядом."),
                     List.of(Line.of("Mon épée préférée s'appelle Brigitte. Elle est très coupante et très timide.", "Мой любимый меч зовут Бриджит. Он очень острый и очень застенчивый."),
                             Line.of("J'ai vendu une hache à un bûcheron. Il m'a vendu une table. On est quittes.", "Я продал топор дровосеку. Он продал мне стол. Мы в расчёте.")),
                     Line.of("J'aime les épées. Et les câlins. Mais pas en même temps.", "Я люблю мечи. И обнимашки. Но не одновременно.")),
@@ -118,11 +118,11 @@ public final class Content {
                     List.of(Line.of("Ma pioche a creusé si profond que j'ai entendu des gens parler en bas. En anglais !", "Моя кирка копнула так глубоко, что я услышал разговоры внизу. По-английски!"),
                             Line.of("Une pelle, c'est une cuillère pour les géants.", "Лопата — это ложка для великанов.")),
                     Line.of("J'aime le bruit du marteau. Mes voisins, non.", "Я люблю стук молотка. Мои соседи — нет.")),
-            new Persona(Line.of("Je suis [[maçon|maçon]]. Je construis des murs. Mais j'oublie souvent la porte.", "Я каменщик. Строю стены. Но часто забываю дверь."),
+            new Persona(Line.of("Je construis des maisons. Il me faut encore des briques pour finir ce mur.", "Я строю дома. Нужны ещё кирпичи, чтобы закончить эту стену."),
                     List.of(Line.of("J'ai construit une maison sans porte. Le propriétaire est encore dedans.", "Я построил дом без двери. Хозяин до сих пор внутри."),
                             Line.of("La pierre, c'est solide. Comme mon caractère. Et ma tête.", "Камень — это прочно. Как мой характер. И моя голова.")),
                     Line.of("J'aime les briques. Elles ne discutent jamais.", "Я люблю кирпичи. Они никогда не спорят.")),
-            new Persona(Line.of("Je fais des flèches. Je vise très bien. Surtout les pommes sur la tête des gens.", "Я делаю стрелы. Отлично целюсь. Особенно в яблоки на головах."),
+            new Persona(Line.of("Je fabrique des arcs et des flèches. [[Vous avez|Tu as]] des plumes à vendre ?", "Я делаю луки и стрелы. У тебя есть перья на продажу?"),
                     List.of(Line.of("Une poule m'a volé une plume. Maintenant, c'est la guerre.", "Курица украла у меня перо. Теперь это война."),
                             Line.of("J'ai tiré une flèche vers le ciel. Elle n'est jamais revenue. Je l'attends encore.", "Я выстрелил в небо. Стрела так и не вернулась. Жду до сих пор.")),
                     Line.of("J'aime les plumes. Les poules, beaucoup moins.", "Я люблю перья. Кур — гораздо меньше.")),
@@ -140,17 +140,17 @@ public final class Content {
             Line.of("Comme ci, comme ça. Le golem m'a regardé bizarrement.", "Так себе. Голем странно на меня посмотрел."));
     public static final List<Line> FALLBACK = List.of(
             Line.of("Hmm… Je ne comprends pas bien. [[Vous pouvez|Tu peux]] répéter plus simplement ?", "Хмм… Я не совсем понимаю. Можешь сказать попроще?"),
-            Line.of("Pardon ? Je suis un peu sourd. Trop de zombies la nuit.", "Простите? Я немного глуховат. Слишком много зомби по ночам."),
-            Line.of("Ah… oui ? Hmm. Hmm ! C'est ce que je dis toujours : hmm.", "А… да? Хмм. Хмм! Я всегда так говорю: хмм."),
-            Line.of("Je ne suis pas sûr de comprendre. Parlons de fromage, c'est plus simple.", "Не уверен, что понял. Давай о сыре, это проще."),
+            Line.of("Pardon, je n'ai pas compris. [[Vous pouvez|Tu peux]] reformuler ?", "Прости, не понял. Можешь сказать иначе?"),
+            Line.of("Qu'est-ce que [[vous voulez|tu veux]] dire ?", "Что ты имеешь в виду?"),
+            Line.of("Je ne comprends pas ce mot. [[Vous avez|Tu as]] un exemple ?", "Я не понимаю это слово. Можешь привести пример?"),
             Line.of("Intéressant ! Et [[vous|toi]], [[vous aimez|tu aimes]] quoi ?", "Интересно! А ты что любишь?"));
     public static final List<Line> CYRILLIC = List.of(
-            Line.of("Pardon ? Ici, on parle français ! Même la chèvre.", "Простите? Здесь говорят по-французски! Даже коза."),
-            Line.of("Je ne comprends pas cette langue. C'est la langue des zombies ?", "Не понимаю этот язык. Это язык зомби?"));
+            Line.of("Essayons en français. [[Vous pouvez|Tu peux]] commencer par « Bonjour ».", "Давай по-французски. Можно начать с «Bonjour»."),
+            Line.of("Je parle français. Une petite phrase suffit.", "Я говорю по-французски. Достаточно короткой фразы."));
     public static final List<Line> THANKS = List.of(
             Line.of("De rien !", "Не за что!"),
             Line.of("Avec plaisir !", "С удовольствием!"),
-            Line.of("Je [[vous|t']]en prie ! Ça fait une émeraude. Non, je plaisante.", "Пожалуйста! С тебя изумруд. Шучу."));
+            Line.of("Je [[vous en|t'en]] prie !", "Пожалуйста!"));
     public static final List<Line> BYE = List.of(
             Line.of("Au revoir ! À bientôt !", "До свидания! До скорого!"),
             Line.of("À plus tard ! Attention aux creepers !", "До встречи! Берегись криперов!"),
@@ -163,7 +163,7 @@ public final class Content {
             Line.of("Hmpf ! Je vais le dire à la chèvre.", "Хмпф! Я всё расскажу козе."));
     public static final List<Line> SORRY = List.of(
             Line.of("Ce n'est pas grave !", "Ничего страшного!"),
-            Line.of("Pas de problème. Tout le monde fait des erreurs. Sauf moi. Enfin, presque.", "Без проблем. Все ошибаются. Кроме меня. Ну, почти."));
+            Line.of("Pas de problème. On oublie ça.", "Ничего страшного. Забыли."));
     public static final List<Line> AGE = List.of(
             Line.of("Mon âge ? C'est un secret. Plus vieux que le puits, plus jeune que la cloche.", "Мой возраст? Это секрет. Старше колодца, моложе колокола."),
             Line.of("J'ai l'âge de mon fromage préféré : très mûr.", "Мне столько же, сколько моему любимому сыру: очень выдержанный."));
@@ -180,7 +180,7 @@ public final class Content {
 
     // ---------- Отношения ----------
     public static final Line OFFER_TU = Line.of("Dis… on se connaît bien maintenant. On se tutoie ?", "Слушай… мы теперь хорошо знакомы. Давай на «ты»?");
-    public static final Line TU_YES = Line.of("Super ! Alors, salut, mon ami ! Enfin, mon amie… Bref, salut !", "Супер! Ну, привет, друг! Или подруга… В общем, привет!");
+    public static final Line TU_YES = Line.of("Ça marche ! On se dit « tu », alors.", "Договорились! Теперь на «ты».");
     public static final Line TU_NO = Line.of("D'accord, on garde le « vous ». C'est très élégant.", "Хорошо, остаёмся на «вы». Это очень элегантно.");
     public static final Line INVITE = Line.of("Samedi soir, c'est la fête du village, près de la cloche ! Musique, feux d'artifice… Tu viens ?",
             "В субботу вечером праздник деревни у колокола! Музыка, фейерверк… Придёшь?");
@@ -459,18 +459,18 @@ public final class Content {
     public record Civic(String id, String itemId, int count, String fr, String hintRu) {}
 
     public static final List<Civic> MAIRIE = List.of(
-            new Civic("pont", "minecraft:oak_log", 10, "Il faut dix bûches de chêne pour le pont. Le vieux pont est tombé. Encore.", "Нужно 10 дубовых брёвен (oak log)."),
-            new Civic("fleurs", "minecraft:cornflower", 5, "Pour la fête, il faut cinq bleuets. Des fleurs BLEUES. Le maire insiste.", "Нужно 5 васильков (синие цветы)."),
-            new Civic("soupe", "minecraft:brown_mushroom", 4, "La cantine a besoin de quatre champignons bruns. Pas les rouges : la dernière fois, le maire a vu des licornes.", "Нужно 4 коричневых гриба."),
-            new Civic("tarte", "minecraft:apple", 6, "Il faut six pommes pour la tarte officielle de la mairie.", "Нужно 6 яблок."),
+            new Civic("pont", "minecraft:oak_log", 10, "Il faut dix bûches de chêne pour réparer le pont.", "Нужно 10 дубовых брёвен (oak log)."),
+            new Civic("fleurs", "minecraft:cornflower", 5, "Pour décorer la place, il faut cinq bleuets.", "Нужно 5 васильков (синие цветы)."),
+            new Civic("soupe", "minecraft:brown_mushroom", 4, "La cantine a besoin de quatre champignons bruns pour la soupe.", "Нужно 4 коричневых гриба."),
+            new Civic("tarte", "minecraft:apple", 6, "Il faut six pommes pour préparer une tarte.", "Нужно 6 яблок."),
             new Civic("drapeau", "minecraft:red_wool", 3, "Il faut trois blocs de laine rouge pour le nouveau drapeau du village.", "Нужно 3 блока красной шерсти."),
             new Civic("feu", "minecraft:spruce_log", 8, "Il faut huit bûches de sapin pour le grand feu de la fête.", "Нужно 8 еловых брёвен (spruce log)."),
-            new Civic("banquet", "minecraft:bread", 5, "Il faut cinq pains pour le banquet. Le maire mange beaucoup.", "Нужно 5 хлебов."),
-            new Civic("omelette", "minecraft:egg", 6, "Il faut six œufs. Ne demandez pas pourquoi. (C'est pour une omelette géante.)", "Нужно 6 яиц."),
-            new Civic("lanternes", "minecraft:torch", 12, "Il faut douze torches pour éclairer la place. Les zombies n'aiment pas la lumière.", "Нужно 12 факелов."),
-            new Civic("carottes", "minecraft:carrot", 12, "Il faut douze carottes pour le concours de soupe. Le fermier est très nerveux.", "Нужно 12 морковок."),
+            new Civic("banquet", "minecraft:bread", 5, "Il faut cinq pains pour le repas du village.", "Нужно 5 хлебов."),
+            new Civic("omelette", "minecraft:egg", 6, "Il faut six œufs pour préparer une omelette.", "Нужно 6 яиц."),
+            new Civic("lanternes", "minecraft:torch", 12, "Il faut douze torches pour éclairer la place.", "Нужно 12 факелов."),
+            new Civic("carottes", "minecraft:carrot", 12, "Il faut douze carottes pour la soupe de la fête.", "Нужно 12 морковок."),
             new Civic("bouleau", "minecraft:birch_log", 6, "Il faut six bûches de bouleau pour les nouveaux bancs de la place.", "Нужно 6 берёзовых брёвен (birch log)."),
-            new Civic("plumes", "minecraft:feather", 4, "Il faut quatre plumes pour le chapeau officiel du maire. Il sera ridicule, mais officiel.", "Нужно 4 пера."));
+            new Civic("plumes", "minecraft:feather", 4, "Il faut quatre plumes pour les nouveaux livres de la mairie.", "Нужно 4 пера."));
 
     // ---------- Праздник ----------
     public static final List<Line> FESTIVAL_LINES = List.of(

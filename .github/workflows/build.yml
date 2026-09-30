@@ -49,7 +49,7 @@ jobs:
             !build/libs/*-sources.jar
 
       - name: Publish jar as a GitHub release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
